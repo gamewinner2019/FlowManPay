@@ -42,8 +42,8 @@ func Init() *gorm.DB {
 	}
 
 	// 连接池配置
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConns)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	// 自动迁移

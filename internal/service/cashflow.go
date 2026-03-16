@@ -36,6 +36,9 @@ func (s *CashFlowService) CreateTenantCashFlow(tx *gorm.DB, tenantID uint, flowT
 		"balance": newMoney,
 		"version": tenant.Version + 1,
 	})
+	if result.Error != nil {
+		return result.Error
+	}
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("租户余额更新冲突，请重试")
 	}
@@ -74,6 +77,9 @@ func (s *CashFlowService) CreateWriteoffCashFlow(tx *gorm.DB, writeoffID uint, f
 		"balance": newMoney,
 		"version": writeoff.Version + 1,
 	})
+	if result.Error != nil {
+		return result.Error
+	}
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("核销余额更新冲突，请重试")
 	}
@@ -116,6 +122,9 @@ func (s *CashFlowService) CreateWriteoffBrokerageFlow(tx *gorm.DB, writeoffID ui
 		"brokerage": newMoney,
 		"version":   brokerage.Version + 1,
 	})
+	if result.Error != nil {
+		return result.Error
+	}
 	if result.RowsAffected == 0 {
 		return fmt.Errorf("佣金余额更新冲突，请重试")
 	}

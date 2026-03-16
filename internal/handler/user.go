@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -145,7 +146,7 @@ func (h *UserHandler) Create(c *gin.Context) {
 	}
 
 	// 生成API Key
-	apiKey := uuid.New().String()[:32]
+	apiKey := strings.Replace(uuid.New().String(), "-", "", -1)
 
 	user := model.Users{
 		Username:  req.Username,
