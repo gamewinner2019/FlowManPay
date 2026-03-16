@@ -1,0 +1,32 @@
+server:
+  port: 8000
+  mode: debug  # debug, release, test
+
+database:
+  host: 127.0.0.1
+  port: 3306
+  user: root
+  password: ""
+  dbname: dvadmin
+  charset: utf8mb4
+  max_idle_conns: 10
+  max_open_conns: 100
+  log_level: info  # silent, error, warn, info
+
+redis:
+  host: 127.0.0.1
+  port: 6379
+  password: ""
+  db: 0
+
+jwt:
+  secret: "your-secret-key-change-in-production"
+  access_expire_minutes: 1440     # 24 hours
+  refresh_expire_minutes: 43200   # 30 days
+
+system:
+  table_prefix: "dvadmin_"
+  captcha_state: true
+  single_login: false
+  default_password: "admin123456"
+  timezone: "Asia/Shanghai"
