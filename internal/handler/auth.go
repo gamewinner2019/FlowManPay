@@ -2,13 +2,16 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mojocn/base64Captcha"
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
 	"github.com/gamewinner2019/FlowManPay/internal/middleware"
+	"github.com/gamewinner2019/FlowManPay/internal/model"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/response"
 	"github.com/gamewinner2019/FlowManPay/internal/service"
 )
@@ -25,6 +28,45 @@ func NewAuthHandler(db *gorm.DB, rdb *redis.Client) *AuthHandler {
 		AuthService: service.NewAuthService(db, rdb),
 		RDB:         rdb,
 	}
+}
+
+// Captcha 获取验证码
+// GET /api/captcha/
+func (h *AuthHandler) Captcha(c *gin.Context) {
+	data := gin.H{}
+
+	// 检查是否开启验证码
+	var captchaConfig model.SystemConfig
+	captchaEnabled := true
+	if err := h.AuthService.DB.Where("`key` = ?", "base.captcha_state").First(&captchaConfig).Error; err == nil {
+		if captchaConfig.Value != nil && (*captchaConfig.Value == "false" || *captchaConfig.Value == "0") {
+			captchaEnabled = false
+		}
+	}
+
+	if captchaEnabled {
+		// 生成验证码图片
+		driver := base64Captcha.NewDriverDigit(80, 240, 4, 0.7, 80)
+		captchaObj := base64Captcha.NewCaptcha(driver, base64Captcha.DefaultMemStore)
+		id, b64s, _, err := captchaObj.Generate()
+		if err != nil {
+			response.ErrorResponse(c, "生成验证码失败")
+			return
+		}
+
+		// 将验证码存入Redis, 5分钟过期
+		ctx := context.Background()
+		code := base64Captcha.DefaultMemStore.Get(id, false)
+		captchaKey := fmt.Sprintf("captcha:%s", id)
+		h.RDB.Set(ctx, captchaKey, code, 5*time.Minute)
+
+		data = gin.H{
+			"key":        id,
+			"image_base": b64s,
+		}
+	}
+
+	response.DetailResponse(c, data, "")
 }
 
 // Login handles user login
