@@ -255,10 +255,9 @@ func (h *WriteOffHandler) ChangeMoney(c *gin.Context) {
 		cashFlow := model.WriteoffCashFlow{
 			WriteoffID:  writeoff.ID,
 			FlowType:    model.WriteoffCashFlowAdjust,
-			Money:       req.Money,
-			BeforeMoney: beforeMoney,
-			AfterMoney:  afterMoney,
-			Remark:      req.Remark,
+			ChangeMoney: req.Money,
+			OldMoney:    beforeMoney,
+			NewMoney:    afterMoney,
 			Creator:     &currentUser.ID,
 		}
 		return tx.Create(&cashFlow).Error
@@ -330,19 +329,17 @@ func (h *WriteOffHandler) Transfer(c *gin.Context) {
 		tx.Create(&model.WriteoffCashFlow{
 			WriteoffID:  from.ID,
 			FlowType:    model.WriteoffCashFlowTransfer,
-			Money:       -req.Money,
-			BeforeMoney: fromBefore,
-			AfterMoney:  fromAfter,
-			Remark:      req.Remark,
+			ChangeMoney: -req.Money,
+			OldMoney:    fromBefore,
+			NewMoney:    fromAfter,
 			Creator:     &currentUser.ID,
 		})
 		tx.Create(&model.WriteoffCashFlow{
 			WriteoffID:  to.ID,
 			FlowType:    model.WriteoffCashFlowTransfer,
-			Money:       req.Money,
-			BeforeMoney: toBefore,
-			AfterMoney:  toAfter,
-			Remark:      req.Remark,
+			ChangeMoney: req.Money,
+			OldMoney:    toBefore,
+			NewMoney:    toAfter,
 			Creator:     &currentUser.ID,
 		})
 

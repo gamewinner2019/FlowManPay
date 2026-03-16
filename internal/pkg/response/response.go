@@ -52,6 +52,19 @@ func ErrorResponse(c *gin.Context, msg string, code ...int) {
 	})
 }
 
+// ErrorResponseWithCode 带错误码的错误响应
+func ErrorResponseWithCode(c *gin.Context, code int, msg string) {
+	if msg == "" {
+		msg = "请求失败"
+	}
+	c.JSON(http.StatusOK, Response{
+		Code:    code,
+		Data:    nil,
+		Msg:     msg,
+		Success: false,
+	})
+}
+
 // PageResponse returns a paginated success response
 func PageResponse(c *gin.Context, data interface{}, total int64, page, limit int, msg string) {
 	if msg == "" {

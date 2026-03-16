@@ -227,10 +227,9 @@ func (h *TenantHandler) ChangeMoney(c *gin.Context) {
 		cashFlow := model.TenantCashFlow{
 			TenantID:    tenant.ID,
 			FlowType:    model.TenantCashFlowAdjust,
-			Money:       req.Money,
-			BeforeMoney: beforeMoney,
-			AfterMoney:  afterMoney,
-			Remark:      req.Remark,
+			ChangeMoney: req.Money,
+			OldMoney:    beforeMoney,
+			NewMoney:    afterMoney,
 			Creator:     &currentUser.ID,
 		}
 		return tx.Create(&cashFlow).Error
