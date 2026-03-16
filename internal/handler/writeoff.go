@@ -315,8 +315,15 @@ func (h *WriteOffHandler) Transfer(c *gin.Context) {
 			return gorm.ErrInvalidData
 		}
 		fromAfter := fromBefore - req.Money
-		if err := tx.Model(&from).Update("balance", fromAfter).Error; err != nil {
-			return err
+		result := tx.Model(&from).Where("version = ?", from.Version).Updates(map[string]interface{}{
+			"balance": fromAfter,
+			"version": from.Version + 1,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("数据已被修改，请重试")
 		}
 
 		// 增加目标核销余额
@@ -329,8 +336,15 @@ func (h *WriteOffHandler) Transfer(c *gin.Context) {
 			toBefore = *to.Balance
 		}
 		toAfter := toBefore + req.Money
-		if err := tx.Model(&to).Update("balance", toAfter).Error; err != nil {
-			return err
+		result = tx.Model(&to).Where("version = ?", to.Version).Updates(map[string]interface{}{
+			"balance": toAfter,
+			"version": to.Version + 1,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("数据已被修改，请重试")
 		}
 
 		// 记录双方流水

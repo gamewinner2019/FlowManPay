@@ -82,22 +82,28 @@ func main() {
 		// ===== 系统管理 =====
 		system := auth.Group("/system")
 		{
-			// 用户管理
+				// 用户管理
 			user := system.Group("/user")
 			{
 				user.GET("/", userHandler.List)
-				user.POST("/", userHandler.Create)
 				user.PUT("/:id/", userHandler.Update)
-				user.DELETE("/:id/", userHandler.Delete)
 				user.PUT("/change_password/", userHandler.ChangePassword)
-				user.PUT("/:id/reset_password/", userHandler.ResetPassword)
-				user.POST("/:id/login_agent/", userHandler.LoginAgent)
 				user.GET("/simple_list/", userHandler.SimpleList)
 				user.GET("/user_info/", authHandler.GetUserInfo)
 
 				// Google 2FA
 				user.GET("/google/bind/", authHandler.GoogleBind)
 				user.POST("/google/check/", authHandler.GoogleCheck)
+
+				// 管理员专用操作
+				adminUser := user.Group("")
+				adminUser.Use(middleware.RequireAdmin())
+				{
+					adminUser.POST("/", userHandler.Create)
+					adminUser.DELETE("/:id/", userHandler.Delete)
+					adminUser.PUT("/:id/reset_password/", userHandler.ResetPassword)
+					adminUser.POST("/:id/login_agent/", userHandler.LoginAgent)
+				}
 			}
 		}
 

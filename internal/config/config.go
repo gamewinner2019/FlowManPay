@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	cfg  *Config
-	once sync.Once
+	cfg        *Config
+	cfgLoadErr error
+	once       sync.Once
 )
 
 type Config struct {
@@ -94,21 +95,20 @@ type SystemConfig struct {
 
 // Load reads the config file and returns the Config struct.
 func Load(path string) (*Config, error) {
-	var loadErr error
 	once.Do(func() {
 		data, err := os.ReadFile(path)
 		if err != nil {
-			loadErr = err
+			cfgLoadErr = err
 			return
 		}
 		cfg = &Config{}
 		if err := yaml.Unmarshal(data, cfg); err != nil {
-			loadErr = err
+			cfgLoadErr = err
 			cfg = nil
 			return
 		}
 	})
-	return cfg, loadErr
+	return cfg, cfgLoadErr
 }
 
 // Get returns the loaded config. Must call Load first.
