@@ -11,19 +11,19 @@ import (
 // CreateOrderID 生成订单ID (格式: yyyyMMddHHmmssSSS + 4位随机数)
 func CreateOrderID() string {
 	now := time.Now()
-	return fmt.Sprintf("%s%04d", now.Format("20060102150405.000")[0:17], rand.Intn(10000))
+	return fmt.Sprintf("%s%03d%04d", now.Format("20060102150405"), now.Nanosecond()/1e6, rand.Intn(10000))
 }
 
 // CreateOrderNo 生成系统订单号 (格式: G + yyyyMMddHHmmssSSSSSSS + 4位随机数)
 func CreateOrderNo() string {
 	now := time.Now()
-	return fmt.Sprintf("G%s%04d", now.Format("20060102150405.000000"), rand.Intn(10000))
+	return fmt.Sprintf("G%s%06d%04d", now.Format("20060102150405"), now.Nanosecond()/1e3, rand.Intn(10000))
 }
 
 // CreateRechargeNo 生成充值单号
 func CreateRechargeNo() string {
 	now := time.Now()
-	return fmt.Sprintf("R%s%04d", now.Format("20060102150405.000000"), rand.Intn(10000))
+	return fmt.Sprintf("R%s%06d%04d", now.Format("20060102150405"), now.Nanosecond()/1e3, rand.Intn(10000))
 }
 
 // ===== Order 订单 =====

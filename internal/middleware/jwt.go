@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -9,6 +10,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/gamewinner2019/FlowManPay/internal/config"
+	"github.com/gamewinner2019/FlowManPay/internal/pkg/rds"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/response"
 )
 
@@ -107,6 +109,17 @@ func JWTAuth() gin.HandlerFunc {
 			response.ErrorResponse(c, "Token类型错误", 4001)
 			c.Abort()
 			return
+		}
+
+		// Check token blacklist (logout invalidation)
+		if redisClient := rds.Get(); redisClient != nil {
+			blacklistKey := "blacklist:" + parts[1]
+			exists, err := redisClient.Exists(context.Background(), blacklistKey).Result()
+			if err == nil && exists > 0 {
+				response.ErrorResponse(c, "Token已失效", 4001)
+				c.Abort()
+				return
+			}
 		}
 
 		// Set user ID in context for downstream handlers

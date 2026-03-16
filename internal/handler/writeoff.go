@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -248,8 +249,15 @@ func (h *WriteOffHandler) ChangeMoney(c *gin.Context) {
 		}
 		afterMoney := beforeMoney + req.Money
 
-		if err := tx.Model(&writeoff).Update("balance", afterMoney).Error; err != nil {
-			return err
+		result := tx.Model(&writeoff).Where("version = ?", writeoff.Version).Updates(map[string]interface{}{
+			"balance": afterMoney,
+			"version": writeoff.Version + 1,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("数据已被修改，请重试")
 		}
 
 		cashFlow := model.WriteoffCashFlow{
@@ -326,22 +334,26 @@ func (h *WriteOffHandler) Transfer(c *gin.Context) {
 		}
 
 		// 记录双方流水
-		tx.Create(&model.WriteoffCashFlow{
+		if err := tx.Create(&model.WriteoffCashFlow{
 			WriteoffID:  from.ID,
 			FlowType:    model.WriteoffCashFlowTransfer,
 			ChangeMoney: -req.Money,
 			OldMoney:    fromBefore,
 			NewMoney:    fromAfter,
 			Creator:     &currentUser.ID,
-		})
-		tx.Create(&model.WriteoffCashFlow{
+		}).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&model.WriteoffCashFlow{
 			WriteoffID:  to.ID,
 			FlowType:    model.WriteoffCashFlowTransfer,
 			ChangeMoney: req.Money,
 			OldMoney:    toBefore,
 			NewMoney:    toAfter,
 			Creator:     &currentUser.ID,
-		})
+		}).Error; err != nil {
+			return err
+		}
 
 		return nil
 	})
