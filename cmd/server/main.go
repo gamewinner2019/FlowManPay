@@ -57,10 +57,14 @@ func main() {
 	// ===== 公开接口（无需认证） =====
 	api := r.Group("/api")
 	{
+		// 初始化配置
+		api.GET("/init/settings/", authHandler.InitSettings)
 		// 验证码
 		api.GET("/captcha/", authHandler.Captcha)
 		// 登录
 		api.POST("/token/", authHandler.Login)
+		// 无验证码登录
+		api.POST("/login/", authHandler.LoginNoCaptcha)
 		// 刷新Token
 		api.POST("/token/refresh/", authHandler.RefreshToken)
 

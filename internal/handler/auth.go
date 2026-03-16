@@ -2,7 +2,9 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -10,6 +12,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"github.com/gamewinner2019/FlowManPay/internal/config"
 	"github.com/gamewinner2019/FlowManPay/internal/middleware"
 	"github.com/gamewinner2019/FlowManPay/internal/model"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/response"
@@ -79,6 +82,17 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 
 	// 验证码校验(如果开启)
+	captchaRequired := true
+	var captchaConfig model.SystemConfig
+	if err := h.AuthService.DB.Where("`key` = ?", "base.captcha_state").First(&captchaConfig).Error; err == nil {
+		if captchaConfig.Value != nil && (*captchaConfig.Value == "false" || *captchaConfig.Value == "0") {
+			captchaRequired = false
+		}
+	}
+	if captchaRequired && req.CaptchaKey == "" {
+		response.ErrorResponse(c, "请输入验证码")
+		return
+	}
 	if req.CaptchaKey != "" {
 		ctx := context.Background()
 		cachedCode, err := h.RDB.Get(ctx, "captcha:"+req.CaptchaKey).Result()
@@ -214,4 +228,108 @@ func (h *AuthHandler) GoogleCheck(c *gin.Context) {
 	h.RDB.Del(ctx, "google_secret:"+user.Username)
 
 	response.DetailResponse(c, nil, "绑定成功")
+}
+
+// InitSettings 获取初始化配置
+// GET /api/init/settings/
+func (h *AuthHandler) InitSettings(c *gin.Context) {
+	data := gin.H{}
+
+	// 查询parent key为 "base" 或 "login" 的父级配置
+	var parents []model.SystemConfig
+	h.AuthService.DB.Where("`key` IN ? AND parent_id IS NULL", []string{"base", "login"}).Find(&parents)
+
+	parentIDs := make([]uint, 0, len(parents))
+	parentKeyMap := make(map[uint]string, len(parents))
+	for _, p := range parents {
+		parentIDs = append(parentIDs, p.ID)
+		parentKeyMap[p.ID] = p.Key
+	}
+
+	if len(parentIDs) > 0 {
+		var children []model.SystemConfig
+		h.AuthService.DB.Where("parent_id IN ?", parentIDs).Order("sort").Find(&children)
+
+		for _, child := range children {
+			if child.ParentID == nil {
+				continue
+			}
+			parentKey := parentKeyMap[*child.ParentID]
+			fullKey := parentKey + "." + child.Key
+
+			var value interface{}
+			if child.Value != nil {
+				// 尝试解析JSON值
+				if err := json.Unmarshal([]byte(*child.Value), &value); err != nil {
+					value = *child.Value
+				}
+				// form_item_type == 7 时取第一个元素的url
+				if child.FormItemType == 7 {
+					if arr, ok := value.([]interface{}); ok && len(arr) > 0 {
+						if m, ok := arr[0].(map[string]interface{}); ok {
+							value = m["url"]
+						}
+					}
+				}
+				// form_item_type == 11 时只保留key/title/value字段
+				if child.FormItemType == 11 {
+					if arr, ok := value.([]interface{}); ok {
+						newArr := make([]map[string]interface{}, 0, len(arr))
+						for _, item := range arr {
+							if m, ok := item.(map[string]interface{}); ok {
+								newArr = append(newArr, map[string]interface{}{
+									"key":   m["key"],
+									"title": m["title"],
+									"value": m["value"],
+								})
+							}
+						}
+						value = newArr
+					}
+				}
+			}
+			data[fullKey] = value
+		}
+	}
+
+	// 支持key过滤
+	if keyFilter := c.Query("key"); keyFilter != "" {
+		filtered := gin.H{}
+		keys := strings.Split(keyFilter, "|")
+		for k, v := range data {
+			for _, prefix := range keys {
+				if prefix != "" && strings.HasPrefix(k, prefix) {
+					filtered[k] = v
+					break
+				}
+			}
+		}
+		data = filtered
+	}
+
+	response.DetailResponse(c, data, "")
+}
+
+// LoginNoCaptcha 无验证码登录接口
+// POST /api/login/
+func (h *AuthHandler) LoginNoCaptcha(c *gin.Context) {
+	cfg := config.Get()
+	if cfg == nil || !cfg.System.LoginNoCaptchaAuth {
+		response.ErrorResponse(c, "该接口暂未开通!")
+		return
+	}
+
+	var req service.LoginRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.ErrorResponse(c, "参数错误: "+err.Error())
+		return
+	}
+
+	resp, err := h.AuthService.Login(&req)
+	if err != nil {
+		response.ErrorResponse(c, err.Error())
+		return
+	}
+
+	response.DetailResponse(c, resp, "登录成功")
 }

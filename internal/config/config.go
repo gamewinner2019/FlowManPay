@@ -84,11 +84,12 @@ type JWTConfig struct {
 }
 
 type SystemConfig struct {
-	TablePrefix     string `yaml:"table_prefix"`
-	CaptchaState    bool   `yaml:"captcha_state"`
-	SingleLogin     bool   `yaml:"single_login"`
-	DefaultPassword string `yaml:"default_password"`
-	Timezone        string `yaml:"timezone"`
+	TablePrefix        string `yaml:"table_prefix"`
+	CaptchaState       bool   `yaml:"captcha_state"`
+	SingleLogin        bool   `yaml:"single_login"`
+	DefaultPassword    string `yaml:"default_password"`
+	Timezone           string `yaml:"timezone"`
+	LoginNoCaptchaAuth bool   `yaml:"login_no_captcha_auth"`
 }
 
 // Load reads the config file and returns the Config struct.

@@ -215,8 +215,9 @@ func (h *PayPluginHandler) Update(c *gin.Context) {
 	}
 	currentUser, _ := middleware.GetCurrentUser(c)
 	updates := map[string]interface{}{
-		"name":        req.Name,
-		"description": req.Description,
+		"name":           req.Name,
+		"description":    req.Description,
+		"support_device": req.SupportDevice,
 	}
 	if req.Status != nil {
 		updates["status"] = *req.Status
@@ -396,6 +397,7 @@ func (h *PayChannelHandler) Update(c *gin.Context) {
 		"min_money":       req.MinMoney,
 		"float_max_money": req.FloatMaxMoney,
 		"float_min_money": req.FloatMinMoney,
+		"moneys":          req.Moneys,
 		"start_time":      req.StartTime,
 		"end_time":        req.EndTime,
 		"logo":            req.Logo,

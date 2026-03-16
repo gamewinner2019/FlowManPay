@@ -354,6 +354,61 @@ func (h *OrderHandler) Retrieve(c *gin.Context) {
 	response.DetailResponse(c, data, "")
 }
 
+// checkOrderOwnership 检查当前用户是否有权操作该订单
+func (h *OrderHandler) checkOrderOwnership(c *gin.Context, order *model.Order) bool {
+	currentUser, _ := middleware.GetCurrentUser(c)
+	if currentUser == nil {
+		response.ErrorResponse(c, "未获取到用户信息", 4001)
+		return false
+	}
+	switch currentUser.Role.Key {
+	case model.RoleKeyAdmin, model.RoleKeyOperation:
+		return true
+	case model.RoleKeyTenant:
+		var tenant model.Tenant
+		if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&tenant).Error; err != nil {
+			response.ErrorResponse(c, "租户信息不存在")
+			return false
+		}
+		if order.MerchantID == nil {
+			response.ErrorResponse(c, "无权操作该订单")
+			return false
+		}
+		var merchant model.Merchant
+		if err := h.DB.Where("id = ? AND parent_id = ?", *order.MerchantID, tenant.ID).First(&merchant).Error; err != nil {
+			response.ErrorResponse(c, "无权操作该订单")
+			return false
+		}
+		return true
+	case model.RoleKeyMerchant:
+		var merchant model.Merchant
+		if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&merchant).Error; err != nil {
+			response.ErrorResponse(c, "商户信息不存在")
+			return false
+		}
+		if order.MerchantID == nil || *order.MerchantID != merchant.ID {
+			response.ErrorResponse(c, "无权操作该订单")
+			return false
+		}
+		return true
+	case model.RoleKeyWriteoff:
+		var writeoff model.WriteOff
+		if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&writeoff).Error; err != nil {
+			response.ErrorResponse(c, "核销信息不存在")
+			return false
+		}
+		var detail model.OrderDetail
+		if err := h.DB.Where("order_id = ? AND writeoff_id = ?", order.ID, writeoff.ID).First(&detail).Error; err != nil {
+			response.ErrorResponse(c, "无权操作该订单")
+			return false
+		}
+		return true
+	default:
+		response.ErrorResponse(c, "无权操作该订单")
+		return false
+	}
+}
+
 // Close 关闭订单
 // POST /api/order/:id/close/
 func (h *OrderHandler) Close(c *gin.Context) {
@@ -366,6 +421,10 @@ func (h *OrderHandler) Close(c *gin.Context) {
 	var order model.Order
 	if err := h.DB.Where("id = ? OR order_no = ?", id, id).First(&order).Error; err != nil {
 		response.ErrorResponse(c, "订单不存在")
+		return
+	}
+
+	if !h.checkOrderOwnership(c, &order) {
 		return
 	}
 
@@ -397,6 +456,10 @@ func (h *OrderHandler) Refund(c *gin.Context) {
 	if err := h.DB.Preload("Merchant").Preload("Merchant.Parent").
 		Where("id = ? OR order_no = ?", id, id).First(&order).Error; err != nil {
 		response.ErrorResponse(c, "订单不存在")
+		return
+	}
+
+	if !h.checkOrderOwnership(c, &order) {
 		return
 	}
 
@@ -483,6 +546,10 @@ func (h *OrderHandler) Notify(c *gin.Context) {
 	var order model.Order
 	if err := h.DB.Where("id = ? OR order_no = ?", id, id).First(&order).Error; err != nil {
 		response.ErrorResponse(c, "订单不存在")
+		return
+	}
+
+	if !h.checkOrderOwnership(c, &order) {
 		return
 	}
 
