@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"strconv"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/gamewinner2019/FlowManPay/internal/middleware"
 	"github.com/gamewinner2019/FlowManPay/internal/model"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/response"
+	"github.com/gamewinner2019/FlowManPay/internal/plugin"
 	"github.com/gamewinner2019/FlowManPay/internal/service"
 )
 
@@ -168,6 +170,56 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 	// 11. 更新统计
 	h.StatisticsService.SubmitDayStatistics(ctx.TenantID(), ctx.MerchantID(), ctx.WriteoffID(), ctx.ChannelID())
+
+	// 12. 调用插件创建订单（提交回调）
+	pluginType := ctx.PluginType()
+	responder := plugin.GetByKey(pluginType)
+	if responder != nil {
+		// 构建插件参数
+		pluginArgs := plugin.CreateOrderArgs{
+			RawOrderNo: ctx.OrderID(),
+			OrderNo:    ctx.OrderNo(),
+			OutOrderNo: ctx.OutOrderNo,
+			Money:      ctx.Money,
+			OrderID:    0,
+		}
+		if ctx.PluginID() != nil {
+			pluginArgs.PluginID = int(*ctx.PluginID())
+		}
+		if ctx.TenantID() != nil {
+			pluginArgs.TenantID = int(*ctx.TenantID())
+		}
+		if ctx.ChannelID() != nil {
+			pluginArgs.ChannelID = int(*ctx.ChannelID())
+		}
+		if ctx.Detail != nil {
+			pluginArgs.ProductID, _ = strconv.Atoi(ctx.Detail.ProductID)
+			pluginArgs.CookieID, _ = strconv.Atoi(ctx.Detail.CookieID)
+		}
+		if ctx.DomainID() != nil {
+			pluginArgs.DomainID = int(*ctx.DomainID())
+		}
+
+		// 触发插件提交回调
+		cbArgs := plugin.CallbackArgs{
+			PluginType: pluginType,
+			OrderNo:    ctx.OrderNo(),
+			OutOrderNo: ctx.OutOrderNo,
+			Money:      ctx.Money,
+		}
+		if ctx.PluginID() != nil {
+			cbArgs.PluginID = int(*ctx.PluginID())
+		}
+		if ctx.TenantID() != nil {
+			cbArgs.TenantID = int(*ctx.TenantID())
+		}
+		if ctx.ChannelID() != nil {
+			cbArgs.ChannelID = int(*ctx.ChannelID())
+		}
+		if err := responder.CallbackSubmit(h.DB, cbArgs); err != nil {
+			log.Printf("%s | 插件提交回调失败: %v", ctx.OutOrderNo, err)
+		}
+	}
 
 	// 返回订单信息
 	result := gin.H{

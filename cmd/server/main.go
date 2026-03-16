@@ -11,6 +11,7 @@ import (
 	"github.com/gamewinner2019/FlowManPay/internal/middleware"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/database"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/rds"
+	"github.com/gamewinner2019/FlowManPay/internal/plugin"
 	"github.com/gamewinner2019/FlowManPay/internal/service"
 )
 
@@ -37,8 +38,12 @@ func main() {
 	merchantHandler := handler.NewMerchantHandler(db, authService)
 	writeoffHandler := handler.NewWriteOffHandler(db, authService)
 
+	// 初始化支付插件
+	plugin.InitAll()
+
 	// 初始化Phase2 Handler
 	orderHandler := handler.NewOrderHandler(db)
+	notifyHandler := handler.NewNotifyHandler(db)
 	payTypeHandler := handler.NewPayTypeHandler(db)
 	payPluginHandler := handler.NewPayPluginHandler(db)
 	payChannelHandler := handler.NewPayChannelHandler(db)
@@ -70,6 +75,10 @@ func main() {
 
 		// 支付下单接口（公开，商户通过签名认证）
 		api.POST("/pay/create/", orderHandler.CreateOrder)
+
+		// 支付回调通知接口（公开，由第三方支付平台回调）
+		api.POST("/pay/order/notify/:plugin_type/:product_id/", notifyHandler.AlipayNotify)
+		api.GET("/pay/order/notify/test/", notifyHandler.NotifyTest)
 	}
 
 	// ===== 需要认证的接口 =====
