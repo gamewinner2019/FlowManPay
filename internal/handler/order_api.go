@@ -118,7 +118,7 @@ func (h *OrderAPIHandler) StartOrder(c *gin.Context) {
 
 	// 构建设备数据（返回给前端用于倒计时等）
 	deviceData := gin.H{
-		"out_time":    h.RDB.Get(ctx, canPayTimeKey).Val(),
+		"out_time":    outTime,
 		"create_time": createTime,
 	}
 
