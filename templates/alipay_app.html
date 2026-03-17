@@ -1,0 +1,18 @@
+<script src="https://gw.alipayobjects.com/as/g/h5-lib/alipayjsapi/3.1.1/alipayjsapi.inc.min.js"></script>
+<script>
+    ap.tradePay({
+        orderStr:"{{.SDK}}"}, function (result) {
+        if (result.resultCode === "9000") {
+            alert("支付成功");
+            ap.popWindow();
+        } else if (result.resultCode === "4000") {
+            alert("订单支付失败");
+        //} else if (result.resultCode == "6001") {
+        //    //alert("支付中取消");
+        } else if (result.resultCode === "6002") {
+            alert("网络连接出错");
+        } else {
+            ap.popWindow();
+        }
+    });
+</script>

@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title></title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover"/>
+    <style>
+        body {
+            padding: 0 16px;
+            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
+            Helvetica Neue, Arial, Noto Sans, sans-serif, apple color emoji,
+            segoe ui emoji, Segoe UI Symbol, noto color emoji;
+        }
+
+        a {
+            color: #576b95;
+        }
+
+        .wrap {
+            min-height: 100%;
+            margin: 0 auto;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .content {
+            box-sizing: border-box;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .content_title {
+            text-align: center;
+            font-size: 22px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        .notice {
+            text-align: center;
+            padding: 16px;
+            padding-bottom: 14px;
+            font-weight: 700;
+        }
+
+        .tip {
+            color: #c8c9cc;
+        }
+
+        .rmb {
+            font-size: 22px;
+        }
+
+        .fee {
+            font-size: 36px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .check_button {
+            flex-grow: 1;
+            padding: 9px 0;
+            outline: none;
+            border-radius: 6px;
+            border: none;
+            font-size: 20px;
+            color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .check_button.highlight {
+            color: rgba(255, 255, 255, 0.8);
+            /* background-color: #1676ff; */
+        }
+
+        .check_button.loadingbtn {
+            color: rgba(255, 255, 255, 0.5);
+            background-color: #69b1ff;
+        }
+
+        .check_button + .check_button {
+            margin-left: 8px;
+        }
+
+        .foot {
+            position: fixed;
+            width: 100%;
+            bottom: 10px;
+            left: 0;
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-bottom: constant(safe-area-inset-bottom);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: border-box;
+        }
+
+        .foot_title {
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .img {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 3.5rem;
+            padding: 0 0.24rem;
+            background: url(unpay_check.png) no-repeat;
+            background-size: 100%;
+            background-position-y: -0.25rem;
+            box-sizing: border-box;
+            color: #eeeeee;
+            text-align: left;
+        }
+
+        .a_button {
+            font-weight: 500;
+            text-decoration: inherit;
+            color: #1676ff;
+        }
+
+        .qrcode {
+            min-height: 100%;
+            margin: 0 auto;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .warning-tip {
+            padding: 8px 16px;
+            background-color: #ecf8ff;
+            border-radius: 4px;
+            border-left: 5px solid #50bfff;
+            margin: 20px 0;
+        }
+
+        .warning-tip p {
+            font-size: 14px;
+            color: #5e6d82;
+            line-height: 1.5em;
+        }
+
+        .danger {
+            font-size: 18px;
+            color: #f56c6c;
+        }
+
+        .sytime {
+            text-align: center;
+            padding-top: 15px;
+            box-sizing: border-box;
+        }
+
+        .qrcodeCont {
+            box-sizing: border-box;
+            padding-top: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .jindu {
+            display: block;
+            position: absolute;
+            width: var(--progress-width, 100%);
+            height: 100%;
+            left: 0;
+            top: 0;
+            z-index: 1;
+            background-color: #1676ff;
+            transition: width 1s linear;
+        }
+
+        .paytext {
+            position: relative;
+            z-index: 2;
+        }
+    </style>
+</head>
+
+<body>
+<div class="wrap">
+    <div class="content">
+        <div class="content_title">云闪付支付</div>
+        <!-- <div class="sytime">支付剩余时间：<span id="countdown" style="width: 80px;display: inline-block;"></span></div> -->
+        <div>
+            <div class="notice">
+                <p class="tip">支付金额</p>
+                <div class="rmb">￥<span class="fee"></span></div>
+            </div>
+        </div>
+        <div>
+            <p class="foot_title">请选择支付方式</p>
+            <div class="img"></div>
+        </div>
+        <div class="qrcodeCont">
+            <div id="qrcode"></div>
+        </div>
+
+        <!--<div class="qrcode"></div>-->
+        <!--<div class="warning-tip">-->
+        <!--  <p><strong>(一)、</strong><b class="danger">如果点击支付按钮没反应</b></p>-->
+        <!--  <p><strong>(二)、</strong><b class="danger">请截图后在支付宝扫码打开</b></p>-->
+        <!--</div>-->
+        <div class="foot">
+            <!-- <div>
+                        <p>
+                            支付完成未自动跳转？。<a class="a_button" onclick="jump()">点击此处跳转</a>
+                        </p>
+                    </div> -->
+            <div class="container">
+                <button class="check_button loadingbtn" onclick="gotoAliPay()">
+                    <span class="jindu"></span>
+                    <span id="paytext" class="paytext"> 初始化...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<!-- <script src="/assets/js/vconsole.min.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/1.8.0/fingerprint2.js"></script>
+<!--<script src="/assets/js/jquery.qrcode.min.js"></script>-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/timer.jquery/0.7.0/timer.jquery.js"></script>
+<script src="https://cdn.staticfile.net/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) {
+            return unescape(r[2]);
+        }
+        return null;
+    }
+
+    function getDeviceType() {
+        //获取请求头中的userAgent
+        var u = navigator.userAgent;
+        //是否是android浏览器
+        var isAndroid = u.indexOf("Android") > -1;
+        //是否是ios浏览器
+        var isIos = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
+        var msg = "";
+        if (isAndroid) {
+            return 1;
+        } else if (isIos) {
+            return 2;
+        } else {
+            return 4;
+        }
+    }
+
+    const progressBar = document.querySelector(".jindu");
+
+    function countdown(startTime, endTime, elementId, countdownTime, callBack) {
+        // 计算时间差
+        var diff = Math.floor((endTime - startTime) / 1000);
+        // 更新倒计时
+        const timer = setInterval(() => {
+            // 将时间差转换为天、小时、分钟、秒等时间单位
+
+            // 将时间单位显示在页面上
+            const countdown = document.getElementById(elementId);
+            countdown.innerHTML = `点我支付,倒计时${diff}`;
+            // 更新时间差
+            diff--;
+
+            const progressWidth = (diff / countdownTime) * 100;
+            console.log(progressWidth);
+            progressBar.style.setProperty("--progress-width", `${progressWidth}%`);
+            // 如果时间差为0，则停止倒计时
+            if (diff < 0) {
+                clearInterval(timer);
+                // countdown.innerHTML = "";
+                callBack && callBack();
+            }
+        }, 1000);
+        return timer;
+    }
+</script>
+<script type="text/javascript">
+    // const vConsole = new VConsole();
+    window.trade_type = "";
+    window.query_times = 0;
+    var visitorId = '';
+    var status = 1;
+    var order_no = '{{.OrderNo}}';
+    var mount = '{{.Money}}';
+    var device_type = getDeviceType();
+    var payTimer = null;
+    var customTimer = null;
+    var payUrl = "";
+    var out_time = "";
+    const canvas = document.getElementById("qrcode");
+    var qrcode = "";
+
+    function checkStatus() {
+        if (status == 0) {
+            // 订单关闭
+            $(".jindu").hide();
+            $(".content_title").text("订单已关闭");
+            $(".content_title").css({color: "red"});
+            $(".check_button").removeClass("highlight");
+            $(".check_button").removeClass("loadingbtn");
+            $("#paytext").text("已关闭");
+        } else if (status == 1) {
+            // 正在初始化
+            $(".jindu").hide();
+            $(".content_title").text("云闪付支付");
+            $(".content_title").css({color: "#000"});
+            $(".check_button").removeClass("highlight");
+            $(".check_button").addClass("loadingbtn");
+            $("#paytext").text("初始化...");
+        } else if (status == 2) {
+            // 正在拉取
+            $(".jindu").hide();
+            $(".content_title").text("云闪付支付");
+            $(".content_title").css({color: "#000"});
+            $(".check_button").removeClass("highlight");
+            $(".check_button").addClass("loadingbtn");
+            $("#paytext").text("正在获取支付链接....");
+        } else if (status == 3) {
+            // 设备类型不支持
+            $(".jindu").hide();
+            $(".content_title").text("设备类型不支持");
+            $(".content_title").css({color: "red"});
+            $(".check_button").removeClass("highlight");
+            $(".check_button").removeClass("loadingbtn");
+            $("#paytext").text("设备类型不支持");
+        } else if (status == 4) {
+            //初始化成功
+            $(".content_title").text("云闪付支付");
+            $(".content_title").css({color: "#000"});
+            $(".check_button").removeClass("loadingbtn");
+            $(".check_button").addClass("highlight");
+            $(".jindu").show();
+            $("#paytext").text("云闪付支付");
+        }
+    }
+
+    // function initPay(visitorId) {
+    //   $(".fee").html(mount);
+    //   $.post(
+    //     "https://xx.gaoqianme.com/api/pay/order/init/",
+    //     {
+    //       order_no,
+    //       device_type,
+    //       device_fingerprint: visitorId,
+    //     },
+    //     function (res) {
+    //       if (res.code === 7101) {
+    //         status = 3;
+    //       } else if (res.code == 400) {
+    //         status = 0;
+    //       } else if (res.code === 2000) {
+    //         var data = res.data;
+    //         out_time = Date.parse(data.out_time);
+    //         var current_time = Date.now();
+    //         if (Math.floor((out_time - current_time) / 1000) < 0) {
+    //           status = 0;
+    //         } else {
+    //           status = 4;
+    //           query();
+    //         }
+    //       }
+
+    //       checkStatus();
+    //     }
+    //   );
+    // }
+
+    // var current_time = Date.now();
+    // var out_time = Date.parse('2024-05-24 07:39:00');
+    // var countdownTime = Math.floor((out_time - current_time) / 1000);
+    // countdown(current_time, out_time, 'paytext', countdownTime)
+
+
+    $(".fee").html(mount);
+
+    //查询支付地址
+    function query() {
+
+        $.get(
+            '{{.StartURL}}',
+            {
+                order_no: order_no,
+                device_type: device_type,
+                device_fingerprint: visitorId,
+                auth_key: '{{.AuthKey}}',
+            },
+            function (res) {
+                if (res.code === 2000) {
+                    var data = res.data;
+                    out_time = Date.parse(data.out_time);
+                    // if (!qrcode) {
+                    //   qrcode = new QRCode(canvas, {
+                    //     text: location.href,
+                    //     width: 200,
+                    //     height: 200,
+                    //     colorDark: "#000000",
+                    //     colorLight: "#ffffff",
+                    //     correctLevel: QRCode.CorrectLevel.H,
+                    //   });
+                    // } else {
+                    //   qrcode.clear(); // clear the code.
+                    //   qrcode.makeCode(location.href); // make another code.
+                    // }
+                    payUrl = data.pay_url;
+                    status = 4;
+                    payTimer && clearInterval(payTimer);
+                    if (!customTimer) {
+                        var current_time = Date.now();
+                        var countdownTime = Math.floor((out_time - current_time) / 1000);
+                        customTimer = countdown(
+                            current_time,
+                            out_time,
+                            "paytext",
+                            countdownTime,
+                            function () {
+                                status = 0;
+                                $(".qrcodeCont").hide();
+                                payTimer && clearInterval(payTimer);
+                                checkStatus();
+                            }
+                        );
+                    }
+
+                    location.href = data.pay_url;
+                } else if (res.code === 999) {
+                    status = 2;
+                    if (!payTimer) {
+                        payTimer = setInterval(query, 1000);
+                    }
+                } else if (res.code === 400) {
+                    status = 0;
+                    customTimer && clearInterval(customTimer);
+                    payTimer && clearInterval(payTimer);
+                } else {
+                }
+                checkStatus();
+            }
+        );
+    }
+
+    new Fingerprint2().get(function (result, components) {
+        visitorId = result
+        query();
+    })
+
+    // const fpPromise = import("https://openfpcdn.io/fingerprintjs/v4").then(
+    //   (FingerprintJS) => FingerprintJS.load()
+    // );
+
+    // fpPromise
+    //   .then((fp) => fp.get())
+    //   .then((result) => {
+    //     // This is the visitor identifier:
+    //     visitorId = result.visitorId;
+    //     $(".fee").html(mount);
+    //     query();
+    //   });
+    // 点击查询支付地址
+    function gotoAliPay() {
+        console.log(payUrl);
+        if (payUrl) {
+            location.href = payUrl;
+        }
+    }
+</script>
+
+</html>

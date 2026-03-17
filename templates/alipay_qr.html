@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8"/>
+    <title></title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover"/>
+
+    <style>
+        body {
+            padding: 0 16px;
+            font-size: 14px;
+            font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto,
+            Helvetica Neue, Arial, Noto Sans, sans-serif, apple color emoji,
+            segoe ui emoji, Segoe UI Symbol, noto color emoji;
+        }
+
+        a {
+            color: #576b95;
+        }
+
+        .wrap {
+            min-height: 100%;
+            margin: 0 auto;
+            position: relative;
+            box-sizing: border-box;
+            padding-top: 30px;
+        }
+
+        .content {
+            box-sizing: border-box;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .content_title {
+            text-align: center;
+            font-size: 22px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: 800;
+        }
+
+        .notice {
+            text-align: center;
+            padding: 16px;
+            /* padding-bottom: 14px; */
+            /* font-weight: 700; */
+        }
+
+        .tip {
+            font-size: 16px;
+            /* color: #c8c9cc; */
+            margin: 0;
+            margin-top: 10vh;
+        }
+
+        .rmb {
+            font-size: 28px;
+            font-weight: 500;
+        }
+
+        .fee {
+            font-size: 50px;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .check_button {
+            flex-grow: 1;
+            padding: 9px 0;
+            outline: none;
+            border-radius: 6px;
+            border: none;
+            font-size: 20px;
+            color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .check_button.highlight {
+            color: rgba(255, 255, 255, 0.8);
+            /* background-color: #1676ff; */
+        }
+
+        .check_button.loadingbtn {
+            color: rgba(255, 255, 255, 0.5);
+            background-color: #69b1ff;
+        }
+
+        .check_button + .check_button {
+            margin-left: 8px;
+        }
+
+        .foot {
+            position: fixed;
+            width: 100%;
+            bottom: 10px;
+            left: 0;
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-bottom: constant(safe-area-inset-bottom);
+            padding-bottom: env(safe-area-inset-bottom);
+            box-sizing: border-box;
+        }
+
+        .foot_title {
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .img {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 3.5rem;
+            padding: 0 0.24rem;
+            background-size: 100%;
+            background-position-y: -0.25rem;
+            box-sizing: border-box;
+            color: #eeeeee;
+            text-align: left;
+        }
+
+        .a_button {
+            font-weight: 500;
+            text-decoration: inherit;
+            color: #1676ff;
+        }
+
+        .qrcode {
+            min-height: 100%;
+            margin: 0 auto;
+            box-sizing: border-box;
+            text-align: center;
+        }
+
+        .warning-tip {
+            padding: 8px 16px;
+            background-color: #ecf8ff;
+            border-radius: 4px;
+            border-left: 5px solid #50bfff;
+            margin: 20px 0;
+        }
+
+        .warning-tip p {
+            font-size: 14px;
+            color: #5e6d82;
+            line-height: 1.5em;
+        }
+
+        .danger {
+            font-size: 18px;
+            color: #f56c6c;
+        }
+
+        .sytime {
+            text-align: center;
+            padding-top: 15px;
+            box-sizing: border-box;
+        }
+
+        .qrcodeCont {
+            padding-top: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 6px;
+            background-color: white;
+            box-shadow: 0 2px 8px 0 rgb(0 0 0 / 2%);
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .jindu {
+            display: block;
+            position: absolute;
+            width: var(--progress-width, 100%);
+            height: 100%;
+            left: 0;
+            top: 0;
+            z-index: 1;
+            background-color: #1676ff;
+            transition: width 1s linear;
+        }
+
+        .paytext {
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            width: 100%;
+            height: 44px;
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+        }
+
+        .header .icon {
+            width: 44px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header .icon img {
+            display: block;
+            width: 35px;
+            height: 35px;
+        }
+
+        .header .info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+            font-weight: 500;
+            justify-content: center;
+        }
+
+        .header .info img {
+            display: block;
+            width: 24px;
+            height: 24px;
+            margin-right: 5px;
+        }
+
+        .button {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 54px;
+            border-radius: 6px;
+            border: 1px solid #3875f6;
+            box-sizing: border-box;
+            font-size: 18px;
+        }
+
+        .payButton {
+            margin-top: 30px;
+            background-color: #3875f6;
+            cursor: pointer;
+            color: #fff;
+        }
+
+        .webButton {
+            margin-top: 20px;
+            color: #3875f6;
+            cursor: pointer;
+        }
+
+        .textButton {
+            text-align: center;
+            font-size: 18px;
+            padding: 20px 0;
+            color: #3875f6;
+        }
+
+        .footText {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            z-index: 2;
+            font-size: 16px;
+            padding: 20px 0;
+            text-align: center;
+            color: #526a95;
+            width: 100%;
+        }
+
+        .scan_tips {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 16px;
+            color: hsl(0, 0%, 58%);
+            /* color: rgba(102, 102, 102, 0.7); */
+        }
+    </style>
+</head>
+
+<body style="background: #F5F5F5">
+<div class="header">
+    <div class="icon">
+        
+    </div>
+    <div class="info">
+        <img src="https://gw.alipayobjects.com/mdn/huamei_yqdpol/afts/img/A*7k70TpG2pGQAAAAAAAAAAAAADj16AQ/original" alt=""/>
+        支付宝付款
+    </div>
+    <div class="icon">
+
+    </div>
+</div>
+<div class="wrap">
+    <div class="content">
+        <!-- <div class="content_title">扫码完成支付</div> -->
+        <!-- <div class="sytime">支付剩余时间：<span id="countdown" style="width: 80px;display: inline-block;"></span></div> -->
+        <div>
+            <div class="notice">
+                <p class="tip">{{.Title}}</p>
+                <!-- <div class="rmb">￥<span class="fee">{{.Money}}</span></div> -->
+            </div>
+        </div>
+
+        <div class="qrcodeCont">
+            <div id="qrcode"></div>
+        </div>
+
+        <div class="scan_tips">
+            <div>长按图片并保存到相册</div>
+            <div>通过支付宝扫码付款</div>
+        </div>
+        <!-- <div class="button payButton" onclick="gotoAliPay()">打开支付宝APP付款</div>
+    <div class="button webButton" onclick="gotoAliPay()">继续浏览器付款</div> -->
+        <!-- <div class="textButton">下载支付宝APP付款</div> -->
+        <!-- <div>
+    <p class="foot_title">请选择支付方式</p>
+    <div class="img"></div>
+  </div> -->
+
+        <!--<div class="qrcode"></div>-->
+        <!--<div class="warning-tip">-->
+        <!--  <p><strong>(一)、</strong><b class="danger">如果点击支付按钮没反应</b></p>-->
+        <!--  <p><strong>(二)、</strong><b class="danger">请截图后在支付宝扫码打开</b></p>-->
+        <!--</div>-->
+        <!-- <div class="foot">
+      <div class="container">
+        <button class="check_button loadingbtn" onclick="gotoAliPay()">
+          <span class="jindu"></span>
+          <span id="paytext" class="paytext"> 初始化...</span>
+        </button>
+      </div>
+    </div> -->
+        <div class="footText" onclick="queryStatus(payUrl)">已支付完成返回查看订单</div>
+    </div>
+</div>
+</body>
+<!-- <script src="/assets/js/vconsole.min.js"></script> -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<!--<script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/1.8.0/fingerprint2.js"></script>
+<script src="/assets/js/jquery.qrcode.min.js"></script>-->
+<script src="https://cdn.staticfile.net/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/timer.jquery/0.7.0/timer.jquery.js"></script>
+<script type="text/javascript">
+    var visitorId = "";
+    var payUrl = "";
+    var domain = window.location.host;
+    var protocol = window.location.protocol;
+    var queryUrl = "{{.CheckURL}}";
+
+    function queryStatus(pay_url) {
+        $.post(
+            queryUrl,
+            {},
+            function (res) {
+                if (res.code === 1002) {
+                    var data = res.data;
+                    location.href = data.jump_url
+                }
+            }
+        );
+    }
+
+    function unescapeToEscape(str) {
+        var entityMap = {
+            escape: {
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&apos;",
+            },
+            unescape: {
+                "&amp;": "&",
+                "&apos;": "'",
+                "&gt;": ">",
+                "&lt;": "<",
+                "&quot;": '"',
+            },
+        };
+        var entityReg = {
+            escape: RegExp("[" + Object.keys(entityMap.escape).join("") + "]", "g"),
+            unescape: RegExp(
+                "(" + Object.keys(entityMap.unescape).join("|") + ")",
+                "g"
+            ),
+        };
+        if (typeof str !== "string") return "";
+        return str.replace(entityReg.unescape, function (match) {
+            return entityMap.unescape[match];
+        });
+    }
+
+    const qrcodeContainer = document.getElementById("qrcode");
+    let qrcode = null
+
+    function gotoAliPay() {
+        var base_url = unescapeToEscape("{{.URL}}")
+        //console.log(base_url)
+        try {
+            new URL(base_url)
+        } catch (e) {
+            alert("{{.Error}}")
+            return
+        }
+        payUrl = base_url
+        // if (base_url.indexOf("https://") !== -1) {
+        //     payUrl = base_url
+        // } else if (base_url.indexOf("alipays://platformapi") === -1) {
+        //     payUrl =
+        //         "alipayqr://platformapi/startapp?saId=10000007&qrcode=" +
+        //         encodeURIComponent(base_url);
+        // } else {
+        //     payUrl = base_url
+        // }
+
+        if (qrcode) {
+            qrcode.clear(); // clear the code.
+            qrcode.makeCode(payUrl); // make another code.
+        } else {
+            qrcode = new QRCode(qrcodeContainer, {
+                text: payUrl,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H,
+            });
+        }
+
+    }
+
+    gotoAliPay()
+
+    if (payUrl !== "") {
+        setInterval(function () {
+            queryStatus(payUrl)
+        }, 2000)
+    }
+</script>
+
+</html>

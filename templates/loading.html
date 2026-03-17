@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>加载中...</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column; /* 改为列布局 */
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .loader {
+            border: 16px solid #bed1e3;
+            border-top: 16px solid #3498db;
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="loader"></div>
+<p>正在下单,请勿刷新</p>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/timer.jquery/0.7.0/timer.jquery.js"></script>
+<script type="text/javascript">
+    window.trade_type = "";
+    window.query_times = 0;
+    var visitorId = "";
+    var status = 1;
+    var payTimer = null;
+    var payUrl = "";
+    var out_time = "";
+    var errorCount = 1
+    function query() {
+        $.get(
+            "{{.StartURL}}",
+            {},
+            function (res) {
+                console.log(res.code);
+                if (res.code === 2000) {
+                    var data = res.data;
+                    payUrl = data.pay_url;
+                    payTimer && clearInterval(payTimer);
+                    location.href = data.pay_url;
+                } else if (res.code === 999) {
+                    status = 2;
+                    if (!payTimer) {
+                        payTimer = setInterval(query, 2000);
+                    }
+                } else {
+                    status = 0;
+                    if (errorCount > 2) {
+                        payTimer && clearInterval(payTimer);
+                        alert(res.msg);
+                        return
+                    }
+                    errorCount = errorCount + 1;
+                }
+                // checkStatus();
+            }
+        );
+    }
+
+    query();
+</script>
+</html>
