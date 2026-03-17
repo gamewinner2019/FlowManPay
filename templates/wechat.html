@@ -143,11 +143,16 @@
         $('.link').show()
     }
 
+    var payUrl = "";
     var url = "{{.URL}}"
+    if (url === "") {
+        return;
+    }
     if (url.indexOf("weixin://") === -1) {
         window.location = url
     } else {
         setQrCode(url)
+        payUrl = url
         if (payUrl !== "") {
             setInterval(function () {
                 queryStatus(payUrl)
