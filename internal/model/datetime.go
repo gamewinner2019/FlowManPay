@@ -14,6 +14,12 @@ type DateTime struct {
 	time.Time
 }
 
+// GormDataType implements GORM's GormDataTypeInterface so that
+// autoCreateTime / autoUpdateTime use time.Now() instead of unix seconds.
+func (DateTime) GormDataType() string {
+	return "time"
+}
+
 // MarshalJSON 实现 json.Marshaler 接口
 func (dt DateTime) MarshalJSON() ([]byte, error) {
 	if dt.IsZero() {
@@ -67,6 +73,8 @@ func (dt *DateTime) Scan(value interface{}) error {
 	switch v := value.(type) {
 	case time.Time:
 		dt.Time = v
+	case int64:
+		dt.Time = time.Unix(v, 0)
 	case string:
 		t, err := time.ParseInLocation(datetimeFormat, v, time.Local)
 		if err != nil {
