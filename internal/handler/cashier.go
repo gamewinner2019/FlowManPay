@@ -89,7 +89,7 @@ func (h *CashierHandler) getDeviceType(c *gin.Context) int {
 	if strings.Contains(ua, "Android") {
 		return 1 // Android
 	}
-	if strings.Contains(ua, "Mac OS") {
+	if strings.Contains(ua, "iPhone") || strings.Contains(ua, "iPad") || strings.Contains(ua, "iPod") {
 		return 2 // iOS
 	}
 	return 4 // PC
