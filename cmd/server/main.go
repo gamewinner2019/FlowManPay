@@ -70,6 +70,9 @@ func main() {
 	jobsSvc := service.NewJobsService(db)
 	go jobsSvc.Start()
 
+	// 初始化 Jobs Handler
+	jobsHandler := handler.NewJobsHandler(db, jobsSvc)
+
 	// 创建Gin引擎
 	r := gin.Default()
 
@@ -540,6 +543,16 @@ func main() {
 				dayStats.GET("/pay_channel/", businessHandler.PayChannelDayStatisticsList)
 				dayStats.GET("/all/", businessHandler.AllDayStatisticsList)
 			}
+		}
+
+		// ===== 定时任务手动触发 =====
+		jobs := auth.Group("/jobs")
+		jobs.Use(middleware.RequireAdmin())
+		{
+			jobs.POST("/check_no_split_history/", jobsHandler.CheckNoSplitHistory)
+			jobs.POST("/delete_order/", jobsHandler.DeleteOrder)
+			jobs.POST("/delete_log/", jobsHandler.DeleteLog)
+			jobs.POST("/auto_transfer/", jobsHandler.AutoTransfer)
 		}
 
 		// ===== 域名鉴权（nginx subrequest） =====
