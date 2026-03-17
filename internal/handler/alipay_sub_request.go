@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"strconv"
@@ -182,8 +183,8 @@ func (h *AlipaySubRequestHandler) UploadImage(c *gin.Context) {
 	imageType = strings.Replace(imageType, "jpeg", "jpg", 1)
 
 	// 读取文件内容
-	content := make([]byte, header.Size)
-	if _, err := file.Read(content); err != nil {
+	content, err := io.ReadAll(file)
+	if err != nil {
 		response.ErrorResponse(c, "读取文件失败")
 		return
 	}

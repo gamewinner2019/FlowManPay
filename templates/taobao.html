@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>淘宝付款</title>
+    <style>
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            font-size: 14px;
+            background-color: #f5f5f9;
+            color: #333;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        .header {
+            height: 44px;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 10;
+            text-align: center;
+            line-height: 44px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #b74a37;
+        }
+
+        .content {
+            padding: 60px 15px 0 15px;
+            position: relative;
+        }
+
+        .qrcode {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto;
+            /* background-color: #b74a37; */
+        }
+
+        .info {
+            margin-top: 20px;
+            background-color: #fff;
+        }
+
+        .info .colum {
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #edf0f2;
+        }
+
+        .info .colum :last-child {
+            border: none;
+        }
+
+        .info .colum .text {
+            margin-left: 10px;
+        }
+
+        .countdown {
+            font-weight: 500;
+        }
+
+        .btn {
+            height: 44px;
+            line-height: 44px;
+            font-size: 16px;
+            background-color: #b74a37;
+            border-radius: 4px;
+            margin-top: 20px;
+            text-align: center;
+            color: #fff;
+        }
+
+        .tips {
+            margin-top: 10px;
+            color: #8d1c12;
+            text-align: center;
+        }
+
+        .link {
+            cursor: pointer;
+            color: #000;
+        }
+
+        .loadText {
+            position: absolute;
+            top: 10vh;
+            left: 0;
+            display: flex;
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+            color: #999;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="header">淘宝付款</div>
+<div class="content">
+    <div class="loadText">正在获取支付链接，请稍等...</div>
+    <div class="qrcode">
+        <div id="qrcode"></div>
+    </div>
+    <div class="info">
+        <div class="colum">
+            <div class="label">支付单号:</div>
+            <div class="text" id="orderNo"></div>
+        </div>
+        <div class="colum">
+            <div class="label">订单金额:</div>
+            <div class="text" id="amount"></div>
+        </div>
+        <div class="colum">
+            <div class="label">订单过期:</div>
+            <div class="text countdown" id="countdown"></div>
+        </div>
+    </div>
+    <div class="btn" id="btn"></div>
+    <div style="padding: 15px"></div>
+    <div class="tips">未安装淘宝？<span class="link" id="link">点击下载</span></div>
+    <div class="tips">手机用户可保存上方二维码到手机中</div>
+    <div class="tips">使用淘宝扫码扫一扫</div>
+    <div class="tips">
+        友情提醒:支付过程中，如发现提示风险，请点击继续付款
+    </div>
+    <div class="tips">特别注意:在淘宝扫码扫一扫中选择“相册”即可</div>
+</div>
+</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fingerprintjs2/1.8.0/fingerprint2.js"></script>
+<script src="/aliapy/timer.jquery.js"></script>
+<script src="https://cdn.staticfile.net/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    function getQueryString(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        var r = window.location.search.substr(1).match(reg);
+        if (r != null) {
+            return unescape(r[2]);
+        }
+        return null;
+    }
+
+    function getDeviceType() {
+        //获取请求头中的userAgent
+        var u = navigator.userAgent;
+        //是否是android浏览器
+        var isAndroid = u.indexOf("Android") > -1;
+        //是否是ios浏览器
+        var isIos = !!u.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
+        var msg = "";
+        if (isAndroid) {
+            return 1;
+        } else if (isIos) {
+            return 2;
+        } else {
+            return 4;
+        }
+    }
+
+    function formatTime(time) {
+        return time < 10 ? "0" + time : time;
+    }
+
+    function countdown(endTime) {
+        const now = new Date();
+        const distance = endTime - now; // 结束时间与现在的时间差（毫秒）
+        if (distance < 0) {
+            clearInterval(intervalId);
+            return;
+        }
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = formatTime(
+            Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+        );
+        const minutes = formatTime(
+            Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60))
+        );
+        const seconds = formatTime(Math.floor((distance % (1000 * 60)) / 1000));
+        // 更新页面上的显示时间
+        document.getElementById("countdown").innerHTML =
+            minutes + "分 " + seconds + "秒";
+    }
+</script>
+<script>
+    var order_no = '{{.OrderNo}}';
+    var mount = '{{.Money}}';
+    var device_type = getDeviceType();
+    var payTimer = null;
+    var payUrl = "";
+    var out_time = "";
+    var canvas = document.getElementById("qrcode");
+    var qrcode = "";
+    $("#orderNo").text(order_no || "--");
+    $("#amount").text(mount ? "￥" + mount.toFixed(2) : "--");
+    $('.btn').text('请稍等...')
+
+    function query() {
+        $.get(
+            "{{.StartURL}}",
+            {
+                order_no: order_no,
+                device_type: device_type,
+                device_fingerprint: visitorId,
+                auth_key: '{{.AuthKey}}',
+            },
+            function (res) {
+                console.log(res)
+                if (res.code === 2000) {
+                    var data = res.data;
+                    out_time = Date.parse(data.out_time);
+                    countdown(out_time)
+                    var intervalId = setInterval(countdown, 1000, new Date(out_time));
+                    if (!qrcode) {
+                        qrcode = new QRCode(canvas, {
+                            text: data.pay_url,
+                            width: 250,
+                            height: 250,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.H,
+                        });
+                    } else {
+                        qrcode.clear();
+                        qrcode.makeCode(data.pay_url);
+                    }
+                    $('.loadText').hide()
+                    $('.btn').text('打开淘宝APP支付')
+                    payUrl = data.pay_url;
+                    payTimer && clearInterval(payTimer);
+                    // location.href = data.pay_url;
+                } else if (res.code === 999) {
+                    $('.btn').text('打开淘宝APP支付')
+                    $('.loadText').text(res.msg)
+                    if (!payTimer) {
+                        payTimer = setInterval(query, 1000);
+                    }
+                } else if (res.code === 400) {
+                    $('.btn').text('打开淘宝APP支付')
+                    $('.loadText').text(res.msg)
+                    payTimer && clearInterval(payTimer);
+
+                } else {
+                }
+
+            }
+        );
+    }
+
+    new Fingerprint2().get(function (result, components) {
+        visitorId = result;
+        query();
+    });
+    $('#link').click(function () {
+        window.open('https://market.m.taobao.com/app/starlink/wakeup-transit/pages/download?star_id=3027&slk_force_set_request=true&targetUrl=https%3A%2F%2Fm.taobao.com%2Findex.htm%3Fslk_gid%3Dgid_er_er%257Cgid_er_af_pop%257Cgid_er_sidebar_0')
+
+    })
+    $("#btn").click(function () {
+        if (payUrl) {
+            location.href = payUrl;
+        }
+    });
+</script>
+</html>

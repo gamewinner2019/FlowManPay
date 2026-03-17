@@ -69,6 +69,9 @@ func main() {
 	// 初始化 支付宝子请求 Handler
 	alipaySubRequestHandler := handler.NewAlipaySubRequestHandler(db, rdb)
 
+	// 初始化收银台 Handler
+	cashierHandler := handler.NewCashierHandler(db, rdb, "templates")
+
 	// 注册内置 Hook
 	service.RegisterBuiltinHooks(db)
 
@@ -111,6 +114,47 @@ func main() {
 
 		// 支付宝直付通进件回调通知（公开，由支付宝服务器回调）
 		api.GET("/alipay/sub/request/indirect/notify/", alipaySubRequestHandler.GetIndirectNotify)
+
+		// 支付宝SDK页面（公开）
+		api.GET("/view/hg/:order_no/:money/alipay/", cashierHandler.AlipayHgNew)
+		api.GET("/alipay/app/:order_no/", cashierHandler.AlipayApp)
+		api.GET("/alipay/gold/hg/:order_no/", cashierHandler.AlipayHg)
+	}
+
+	// ===== 收银台模板路由（公开，无需认证） =====
+	view := r.Group("/view")
+	{
+		// 标准收银台
+		view.GET("/:order_no/:money/alipay/", cashierHandler.AlipayNew)
+		view.GET("/:order_no/:money/alipay/copy/", cashierHandler.AlipayCopy)
+		view.GET("/:order_no/:money/alipay/ts/", cashierHandler.AlipayTs)
+		view.GET("/:order_no/:money/wechat/", cashierHandler.WechatNew)
+		view.GET("/:order_no/:money/alipay/uid/", cashierHandler.AlipayUID)
+		view.GET("/:order_no/:money/alipay/qr/", cashierHandler.AlipayQr)
+		view.GET("/:order_no/:money/alipay/wqr/", cashierHandler.AlipayWithQr)
+
+		// 运输支付
+		view.GET("/yunshu/:order_no/:trade_no/alipay/", cashierHandler.YunshuPay)
+
+		// Loading 页面
+		view.GET("/:order_no/loading/", cashierHandler.Loading)
+
+		// Other 系列收银台
+		view.GET("/other/:order_no/:money/alipay/", cashierHandler.OtherAlipay)
+		view.GET("/other/:order_no/:money/alipay/auto/", cashierHandler.OtherAlipayAuto)
+		view.GET("/other/:order_no/:money/alipay/gold/", cashierHandler.OtherAlipayGold)
+		view.GET("/other/:order_no/:money/wechat/", cashierHandler.OtherWechat)
+		view.GET("/other/:order_no/:money/wechat/v2/", cashierHandler.OtherWechat2)
+		view.GET("/other/:order_no/:money/wechat/v3/", cashierHandler.OtherWechat2NoDevice)
+		view.GET("/other/:order_no/:money/wechat/mix/", cashierHandler.OtherWechatMix)
+		view.GET("/other/:order_no/:money/wechat/qr/", cashierHandler.OtherWechatQr)
+		view.GET("/other/:order_no/:money/wechat/qr/v2", cashierHandler.OtherWechatQrAuto)
+		view.GET("/other/:order_no/:money/paypal/", cashierHandler.OtherPaypal)
+		view.GET("/other/:order_no/:money/taobao/", cashierHandler.OtherTaobao)
+		view.GET("/other/:order_no/:money/unpay/", cashierHandler.OtherUnpay)
+
+		// 商户收款页面
+		view.GET("/:merchant_id/MerchantPay/", cashierHandler.MerchantPay)
 	}
 
 	// ===== 需要认证的接口 =====

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+ 
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.qrcode/1.0.0/jquery.qrcode.min.js"></script>
+    <title>
+        支付宝截图扫码
+    </title>
+    <link href="/pay/css/pay.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="body">
+        <h1 class="mod-title">
+            <img src="https://gw.alipayobjects.com/mdn/huamei_yqdpol/afts/img/A*7k70TpG2pGQAAAAAAAAAAAAADj16AQ/original" />
+        </h1>
+
+        <div class="mod-ct" style="height:600px;">
+            <div class="order">
+                <input type="hidden" id="hfod" name="hidorderno" value="{{.OrderNo}}" />
+
+
+            </div>
+            <div class="amount" id="money">￥{{.Money}}</div>
+            <div style="color:red;">不要重复支付，重复支付，超时支付不退款</div>
+            <div class="paybtn" style="">
+                <div id="alipayform" style="text-align:center;padding:20px 10px"></div>
+            </div>
+
+            <div class="time-item" style="padding-top: 160px">
+
+                <strong id="hour_show"></strong>
+                <strong id="minute_show"></strong>
+                <strong id="second_show"></strong>
+            </div>
+            <div class="tip">
+
+                <div class="tip-text">
+                    <style>
+                        p span {
+                            color: red;
+                            font-weight: bold;
+                        }
+                    </style>
+
+                    <p style="color: blue; ">不要重复支付，重复支付，超时支付不退款</p>
+                    <p style="color: blue; ">不要修改备注，修改不到账！！！</p>
+                </div>
+            </div>
+            <button type="button" id="btntiaozhuan" href='' style="border-radius: 5px;background-color:#00BFFF;color:#FFFFFF;font-size:22px; height:45px;width:95%;border:0;">立即支付</button>
+            <div style="height:20px;"></div>
+            
+        </div>
+
+    </div>
+
+    <script type="text/javascript">
+
+        function utf16to8(str) {
+            var out, i, len, c;
+            out = "";
+            len = str.length;
+            for (i = 0; i < len; i++) {
+                c = str.charCodeAt(i);
+                if ((c >= 0x0001) && (c <= 0x007F)) {
+                    out += str.charAt(i);
+                } else if (c > 0x07FF) {
+                    out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
+                    out += String.fromCharCode(0x80 | ((c >> 6) & 0x3F));
+                    out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+                } else {
+                    out += String.fromCharCode(0xC0 | ((c >> 6) & 0x1F));
+                    out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+                }
+            }
+            return out;
+        }
+        var intDiff = parseInt(86.2585954);//倒计时总秒数量
+        $('body').everyTime('1s', 'countdown', function () {
+            var day = 0,
+                hour = 0,
+                minute = 0,
+                second = 0;//时间默认值
+            if (intDiff > 0) {
+                day = Math.floor(intDiff / (60 * 60 * 24));
+                hour = Math.floor(intDiff / (60 * 60)) - (day * 24);
+                minute = Math.floor(intDiff / 60) - (day * 24 * 60) - (hour * 60);
+                second = Math.floor(intDiff) - (day * 24 * 60 * 60) - (hour * 60 * 60) - (minute * 60);
+
+            }
+            else {
+                $("#alipayform").find("img").attr('src', 'img/qrcode_none.png');
+                $("#msg").html("<h1>二维码已过期</h1>");
+                location.href = "chaoshi";
+            }
+            if (minute <= 9) minute = '0' + minute;
+            if (second <= 9) second = '0' + second;
+
+            $('#hour_show').html('<s id="h"></s>' + hour + '时');
+            $('#minute_show').html('<s></s>' + minute + '分');
+            $('#second_show').html('<s></s>' + second + '秒');
+            intDiff--;
+        });
+
+
+        var jumpurl = "{{.URL}}";
+        var qrurl = jumpurl;
+        jumpurl = "alipays://platformapi/startapp?saId=20000218&url=" + jumpurl;
+        $("#alipayform").qrcode({
+            render: "canvas", //也可以替换为table
+            width: 200,
+            height: 200,
+            text: utf16to8(qrurl)
+        });
+          
+        var isali = 0;
+        var ua = navigator.userAgent.toLowerCase();
+        if (ua.match(/AlipayClient/i) == 'alipayclient') {
+            isali = 1;
+            location.href = alipayUrl;
+        }
+        $("#btntiaozhuan").click(function () {
+
+            if (isali == 1) {
+                location.href = alipayUrl;
+            } else {
+                window.location = jumpurl;
+            }
+
+            return false;
+        });
+
+
+
+
+        //alert("支付时候不要增加备注和修改备注，修改不到账！如果跳转不到支付页面，请支付宝截图扫码支付【重复支付不补不退】");
+
+        //function getstatus() {
+        //    var od = 'S2024091521331977003';
+        //
+        //    var statusURL = "/api/searchorderstatus?od=" + od;
+        //    $.get(statusURL, function (res) {
+        //        if (res.ns == 1) {
+        //            location.href = "success?od=" + od;
+        //        }
+        //        return false;
+        //    },'json');
+        //}
+        //setInterval(getstatus, 5000);
+        //if (isali == 0) {
+        //    window.location = jumpurl;
+        //} else {
+        //    $("#fkinfo").show();
+        //}
+
+    </script>
+</body>
+</html>

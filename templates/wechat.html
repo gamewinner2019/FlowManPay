@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微信支付</title>
+</head>
+<style>
+    html, body {
+        width: 100%;
+        height: 100%;
+        font-size: 16px;
+    }
+
+    body {
+        background-color: #2aae67;
+        padding: 30px 15px 0 15px;
+
+    }
+
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 2;
+        width: 100%;
+        height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 16px;
+    }
+
+    .logo {
+        display: flex;
+        justify-content: center;
+
+    }
+
+    .logo img {
+        width: 140px;
+    }
+
+    .erweima_cont {
+        width: 100%;
+        height: 320px;
+        margin-top: 30px;
+        background-color: #fff;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+    }
+
+    .link {
+        padding: 15px;
+        display: none;
+        color: #09f;
+    }
+
+    .mishu {
+        margin-top: 30px;
+
+        color: #fff;
+        line-height: 1.5;
+    }
+
+    .mishu .tit {
+        font-weight: 500;
+        font-size: 16px;
+        margin-bottom: 5px;
+    }
+
+
+</style>
+<body>
+<!-- <div class="header">
+
+    <div class="text">扫码支付</div>
+</div> -->
+<div class="logo">
+    <img src="/wechat/wxicon.png" alt="">
+</div>
+<div class="erweima_cont">
+    <div id="qrcode"></div>
+    <div class="link">下载二维码</div>
+</div>
+
+<div class="mishu">
+    <div class="tit"> 支付方式：</div>
+    <p>1.保存二维码前往微信扫一扫</p>
+    <p>2.使用另外一个手机扫一扫</p>
+</div>
+<script src="/wechat/jquery.min.js"></script>
+<script src="/wechat/qrcode.min.js"></script>
+
+<script src="/wechat/timer.jquery.js"></script>
+<script>
+    var qrcode = ""
+    var canvas = document.getElementById("qrcode");
+    var domain = window.location.host;
+    var protocol = window.location.protocol;
+    var queryUrl = protocol + "//" + domain + "{{.CheckURL}}";
+
+    function queryStatus(pay_url) {
+        $.post(
+            queryUrl,
+            {},
+            function (res) {
+                if (res.code === 1002) {
+                    var data = res.data;
+                    location.href = data.jump_url
+                }
+            }
+        );
+    }
+
+    function setQrCode(url) {
+        $('.link').hide()
+        if (!url) return
+        if (!qrcode) {
+            qrcode = new QRCode(canvas, {
+                text: url,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+
+                correctLevel: QRCode.CorrectLevel.H,
+            });
+        } else {
+            qrcode.clear(); // clear the code.
+            qrcode.makeCode(url); // make another code.
+        }
+        $('.link').show()
+    }
+
+    var url = "{{.URL}}"
+    if (url.indexOf("weixin://") === -1) {
+        window.location = url
+    } else {
+        setQrCode(url)
+        if (payUrl !== "") {
+            setInterval(function () {
+                queryStatus(payUrl)
+            }, 2000)
+        }
+    }
+
+    $('.link').click(() => {
+        console.log(canvas)
+        var imgSrc = $("#qrcode img").attr("src");
+        if (imgSrc) {
+            var link = document.createElement('a');
+            link.href = imgSrc;
+            link.download = 'qrcode.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+    })
+</script>
+</body>
+</html>
