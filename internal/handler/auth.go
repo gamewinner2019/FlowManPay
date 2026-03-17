@@ -103,8 +103,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 	if req.CaptchaKey != "" {
 		ctx := context.Background()
+		if req.Captcha == "" {
+			response.ErrorResponse(c, "请输入验证码")
+			return
+		}
 		cachedCode, err := h.RDB.Get(ctx, "captcha:"+req.CaptchaKey).Result()
-		if err != nil || cachedCode != req.Captcha {
+		if err != nil || cachedCode == "" || cachedCode != req.Captcha {
 			response.ErrorResponse(c, "验证码错误或已过期")
 			return
 		}

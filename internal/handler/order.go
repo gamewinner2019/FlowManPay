@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -545,9 +546,16 @@ func (h *OrderHandler) Refund(c *gin.Context) {
 	}
 
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
-		// 更新订单状态
-		if err := tx.Model(&order).Update("order_status", model.OrderStatusRefund).Error; err != nil {
-			return err
+		// 原子更新订单状态（防止并发双重退款）
+		result := tx.Model(&model.Order{}).
+			Where("id = ? AND order_status IN ?", order.ID,
+				[]model.OrderStatus{model.OrderStatusSuccess, model.OrderStatusSuccessPre}).
+			Update("order_status", model.OrderStatusRefund)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return fmt.Errorf("订单状态已变更，无法退款")
 		}
 
 		// 退还租户手续费

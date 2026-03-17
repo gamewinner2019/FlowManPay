@@ -840,11 +840,25 @@ func (h *AlipayNativeHandler) PublicPoolStatistics(c *gin.Context) {
 		COUNT(*) as total_count
 	`).Scan(&countResult)
 
-	// 流水统计
+	// 流水统计（复用带RBAC过滤的poolQuery，避免跨租户数据泄露）
 	var poolIDs []uint
 	poolQuery2 := h.DB.Model(&model.AlipayPublicPool{}).
 		Joins("LEFT JOIN "+model.AlipayProduct{}.TableName()+" ap ON ap.id = "+model.AlipayPublicPool{}.TableName()+".alipay_id").
 		Where("ap.is_delete = ?", false)
+	switch user.Role.Key {
+	case model.RoleKeyAdmin, model.RoleKeyOperation:
+	case model.RoleKeyWriteoff:
+		var wo model.WriteOff
+		if err := h.DB.Where("system_user_id = ?", user.ID).First(&wo).Error; err == nil {
+			poolQuery2 = poolQuery2.Where("ap.writeoff_id = ?", wo.ID)
+		}
+	case model.RoleKeyTenant:
+		var t model.Tenant
+		if err := h.DB.Where("system_user_id = ?", user.ID).First(&t).Error; err == nil {
+			poolQuery2 = poolQuery2.Where("ap.writeoff_id IN (?)",
+				h.DB.Model(&model.WriteOff{}).Select("id").Where("parent_id = ?", t.ID))
+		}
+	}
 	poolQuery2.Pluck(model.AlipayPublicPool{}.TableName()+".id", &poolIDs)
 
 	var flowResult struct {
