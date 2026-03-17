@@ -498,9 +498,10 @@ func (h *OrderAPIHandler) WechatNotify(c *gin.Context) {
 			c.String(http.StatusBadRequest, "fail")
 		}
 	} else {
-		// 没有对应插件，默认走成功流程
-		go h.successNotify(orderNo, ticketNo, payTime, pluginType)
-		c.String(http.StatusOK, "success")
+		// 没有对应插件，拒绝通知（防止伪造回调）
+		log.Printf("[接收通知] %s 未找到对应插件, 订单号: %s", pluginType, orderNo)
+		c.String(http.StatusBadRequest, "fail")
+		return
 	}
 }
 
