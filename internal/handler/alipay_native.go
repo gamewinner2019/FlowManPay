@@ -280,20 +280,36 @@ func (h *AlipayNativeHandler) ProductStatisticsDay(c *gin.Context) {
 
 	var result statsResult
 	// 今日
+	var todayResult struct {
+		TodaySubmit  int   `gorm:"column:today_submit"`
+		TodaySuccess int   `gorm:"column:today_success"`
+		TodayMoney   int64 `gorm:"column:today_money"`
+	}
 	h.DB.Model(&model.AlipayProductDayStatistics{}).
 		Where("product_id = ? AND date = ?", id, today).
 		Select("COALESCE(SUM(submit_count),0) as today_submit, COALESCE(SUM(success_count),0) as today_success, COALESCE(SUM(success_money),0) as today_money").
-		Scan(&result)
+		Scan(&todayResult)
+	result.TodaySubmit = todayResult.TodaySubmit
+	result.TodaySuccess = todayResult.TodaySuccess
+	result.TodayMoney = todayResult.TodayMoney
 	// 昨日
+	var yesterdayResult struct {
+		YesterdayMoney int64 `gorm:"column:yesterday_money"`
+	}
 	h.DB.Model(&model.AlipayProductDayStatistics{}).
 		Where("product_id = ? AND date = ?", id, yesterday).
 		Select("COALESCE(SUM(success_money),0) as yesterday_money").
-		Scan(&result)
+		Scan(&yesterdayResult)
+	result.YesterdayMoney = yesterdayResult.YesterdayMoney
 	// 累计
+	var totalResult struct {
+		TotalMoney int64 `gorm:"column:total_money"`
+	}
 	h.DB.Model(&model.AlipayProductDayStatistics{}).
 		Where("product_id = ?", id).
 		Select("COALESCE(SUM(success_money),0) as total_money").
-		Scan(&result)
+		Scan(&totalResult)
+	result.TotalMoney = totalResult.TotalMoney
 
 	response.DetailResponse(c, result, "")
 }
@@ -628,9 +644,7 @@ func (h *AlipayNativeHandler) TransferHistoryList(c *gin.Context) {
 	query.Count(&total)
 
 	var histories []model.TransferHistory
-	h.DB.Preload("AlipayProduct").Preload("AlipayUser").
-		Joins("LEFT JOIN "+model.AlipayProduct{}.TableName()+" ap ON ap.id = "+model.TransferHistory{}.TableName()+".alipay_product_id").
-		Where("ap.is_delete = ?", false).
+	query.Preload("AlipayProduct").Preload("AlipayUser").
 		Order(model.TransferHistory{}.TableName() + ".create_datetime DESC").
 		Offset(offset).Limit(limit).
 		Find(&histories)
@@ -743,9 +757,7 @@ func (h *AlipayNativeHandler) PublicPoolList(c *gin.Context) {
 	query.Count(&total)
 
 	var pools []model.AlipayPublicPool
-	h.DB.Preload("Alipay").
-		Joins("LEFT JOIN "+model.AlipayProduct{}.TableName()+" ap ON ap.id = "+model.AlipayPublicPool{}.TableName()+".alipay_id").
-		Where("ap.is_delete = ?", false).
+	query.Preload("Alipay").
 		Order(model.AlipayPublicPool{}.TableName() + ".id DESC").
 		Offset(offset).Limit(limit).
 		Find(&pools)
@@ -1619,9 +1631,7 @@ func (h *AlipayNativeHandler) ShenmaList(c *gin.Context) {
 	query.Count(&total)
 
 	var shenmas []model.AlipayShenma
-	h.DB.Preload("Alipay").Preload("Tenant").
-		Joins("LEFT JOIN "+model.AlipayProduct{}.TableName()+" ap ON ap.id = "+model.AlipayShenma{}.TableName()+".alipay_id").
-		Where("ap.is_delete = ?", false).
+	query.Preload("Alipay").Preload("Tenant").
 		Order(model.AlipayShenma{}.TableName() + ".id DESC").
 		Offset(offset).Limit(limit).
 		Find(&shenmas)
