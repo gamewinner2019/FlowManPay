@@ -474,7 +474,12 @@ func (s *OrderService) CheckDomain(ctx *OrderCreateCtx) error {
 }
 
 // TryCreateOrder 尝试创建订单
-func (s *OrderService) TryCreateOrder(ctx *OrderCreateCtx, creatorID *uint) error {
+func (s *OrderService) TryCreateOrder(ctx *OrderCreateCtx, creatorID *uint, tx ...*gorm.DB) error {
+	db := s.DB
+	if len(tx) > 0 && tx[0] != nil {
+		db = tx[0]
+	}
+
 	orderNo := model.CreateOrderNo()
 	orderID := model.CreateOrderID()
 	log.Printf("%s | 尝试创建订单%s", ctx.OutOrderNo, orderNo)
@@ -499,7 +504,7 @@ func (s *OrderService) TryCreateOrder(ctx *OrderCreateCtx, creatorID *uint) erro
 		Creator:      creatorID,
 	}
 
-	if err := s.DB.Create(order).Error; err != nil {
+	if err := db.Create(order).Error; err != nil {
 		return fmt.Errorf("创建订单失败: %w", err)
 	}
 	ctx.Order = order
@@ -507,7 +512,12 @@ func (s *OrderService) TryCreateOrder(ctx *OrderCreateCtx, creatorID *uint) erro
 }
 
 // TryCreateOrderDetail 创建订单详情
-func (s *OrderService) TryCreateOrderDetail(ctx *OrderCreateCtx, creatorID *uint) error {
+func (s *OrderService) TryCreateOrderDetail(ctx *OrderCreateCtx, creatorID *uint, tx ...*gorm.DB) error {
+	db := s.DB
+	if len(tx) > 0 && tx[0] != nil {
+		db = tx[0]
+	}
+
 	detail := &model.OrderDetail{
 		OrderID:        ctx.OrderID(),
 		NotifyURL:      ctx.NotifyURL,
@@ -524,7 +534,7 @@ func (s *OrderService) TryCreateOrderDetail(ctx *OrderCreateCtx, creatorID *uint
 		Creator:        creatorID,
 	}
 
-	if err := s.DB.Create(detail).Error; err != nil {
+	if err := db.Create(detail).Error; err != nil {
 		return fmt.Errorf("创建订单详情失败: %w", err)
 	}
 	ctx.Detail = detail

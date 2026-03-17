@@ -153,25 +153,29 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// 8. 创建订单
-	if err := h.OrderService.TryCreateOrder(ctx, nil); err != nil {
+	// 8. 创建订单 + 订单详情（事务保证原子性）
+	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		if err := h.OrderService.TryCreateOrder(ctx, nil, tx); err != nil {
+			return err
+		}
+		if err := h.OrderService.TryCreateOrderDetail(ctx, nil, tx); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		response.ErrorResponse(c, err.Error())
 		return
 	}
 
-	// 9. 创建订单详情
-	if err := h.OrderService.TryCreateOrderDetail(ctx, nil); err != nil {
-		response.ErrorResponse(c, err.Error())
-		return
-	}
-
-	// 10. 记录签名日志
+	// 9. 记录签名日志（事务提交后）
 	h.OrderService.CreateOrderLog(ctx)
 
-	// 11. 更新统计
+	// 10. 更新统计（事务提交后）
 	h.StatisticsService.SubmitDayStatistics(ctx.TenantID(), ctx.MerchantID(), ctx.WriteoffID(), ctx.ChannelID())
 
-	// 12. 调用插件创建订单（提交回调）
+	// 11. 调用插件创建订单
+	var payURL string
 	pluginType := ctx.PluginType()
 	responder := plugin.GetByKey(pluginType)
 	if responder != nil {
@@ -198,6 +202,18 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		}
 		if ctx.DomainID() != nil {
 			pluginArgs.DomainID = int(*ctx.DomainID())
+		}
+
+		// 调用插件创建订单（生成支付URL）
+		createResult, createErr := responder.CreateOrder(h.DB, pluginArgs)
+		if createErr != nil {
+			log.Printf("%s | 插件创建订单失败: %v", ctx.OutOrderNo, createErr)
+		} else if createResult != nil && createResult.Code == 0 && createResult.Data != nil {
+			if url, ok := createResult.Data["pay_url"]; ok {
+				if s, ok := url.(string); ok {
+					payURL = s
+				}
+			}
 		}
 
 		// 触发插件提交回调
@@ -228,7 +244,10 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		"amount":    ctx.Money,
 		"channelId": req.ChannelID,
 	}
-	if ctx.DomainURL() != "" {
+	// 优先使用插件返回的支付URL，否则回退到收银台页面
+	if payURL != "" {
+		result["payUrl"] = payURL
+	} else if ctx.DomainURL() != "" {
 		result["payUrl"] = ctx.DomainURL() + "/pay/" + ctx.OrderID()
 	}
 
