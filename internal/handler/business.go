@@ -1926,8 +1926,16 @@ func (h *BusinessHandler) AuthResponderCheckAuth(c *gin.Context) {
 		return
 	}
 
-	authTimeout, _ := strconv.ParseInt(authTimeoutStr, 10, 64)
-	ts, _ := strconv.ParseInt(parts[0], 10, 64)
+	authTimeout, err := strconv.ParseInt(authTimeoutStr, 10, 64)
+	if err != nil {
+		c.Status(403)
+		return
+	}
+	ts, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		c.Status(403)
+		return
+	}
 	if ts+authTimeout < time.Now().Unix() {
 		c.Status(403)
 		return
