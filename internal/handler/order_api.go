@@ -646,11 +646,11 @@ func (h *OrderAPIHandler) successNotify(orderNo string, ticketNo string, payTime
 		payTime = time.Now()
 	}
 
-	// 查询订单（只处理非成功状态）
-	if err := h.DB.Where("order_no = ? AND order_status NOT IN ?", orderNo,
-		[]model.OrderStatus{model.OrderStatusSuccessPre, model.OrderStatusSuccess}).
-		First(&order).Error; err != nil {
-		log.Printf("[微信通知] 订单已完成, 订单号: %s", orderNo)
+		// 查询订单（只处理生成中和等待支付状态，与支付宝路径保持一致）
+		if err := h.DB.Where("order_no = ? AND order_status IN ?", orderNo,
+			[]model.OrderStatus{model.OrderStatusInProduction, model.OrderStatusWaitPay}).
+			First(&order).Error; err != nil {
+			log.Printf("[微信通知] 订单状态不允许更新, 订单号: %s", orderNo)
 		// 已经是 SUCCESS_PRE 状态，尝试触发商户通知
 		var existingOrder model.Order
 		if err := h.DB.Where("order_no = ? AND order_status = ?", orderNo, model.OrderStatusSuccessPre).
@@ -662,9 +662,9 @@ func (h *OrderAPIHandler) successNotify(orderNo string, ticketNo string, payTime
 
 	orderBefore := int(order.OrderStatus)
 
-	// 原子更新订单状态为 SUCCESS_PRE，使用实际支付时间
-	result := h.DB.Model(&model.Order{}).Where("order_no = ? AND order_status NOT IN ?", orderNo,
-		[]model.OrderStatus{model.OrderStatusSuccessPre, model.OrderStatusSuccess}).
+		// 原子更新订单状态为 SUCCESS_PRE，使用实际支付时间（只允许从生成中/等待支付状态更新）
+		result := h.DB.Model(&model.Order{}).Where("order_no = ? AND order_status IN ?", orderNo,
+			[]model.OrderStatus{model.OrderStatusInProduction, model.OrderStatusWaitPay}).
 		Updates(map[string]interface{}{
 			"order_status": model.OrderStatusSuccessPre,
 			"pay_datetime": payTime,
