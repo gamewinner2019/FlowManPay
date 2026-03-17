@@ -80,8 +80,12 @@ func (h *NotifyHandler) AlipayNotify(c *gin.Context) {
 		return
 	}
 
-	// 验证签名
-	flag := alipaySDK.VerifyNotify(data)
+	// 验证签名（必须先验签再做任何业务逻辑，防止信息泄露）
+	if !alipaySDK.VerifyNotify(data) {
+		log.Printf("[接收通知] %s 验签失败", pluginType)
+		c.String(http.StatusBadRequest, "fail")
+		return
+	}
 
 	orderNo := data["out_trade_no"]
 	payTime := data["gmt_payment"]
@@ -96,46 +100,41 @@ func (h *NotifyHandler) AlipayNotify(c *gin.Context) {
 		return
 	}
 
-	// 验证金额
-	orderMoney := fmt.Sprintf("%.2f", float64(order.Money)/100)
-	if orderMoney != totalAmount {
-		log.Printf("[接收通知] %s 订单金额不一致(%s,%s), 订单号: %s", pluginType, orderMoney, totalAmount, orderNo)
+	// 验证金额（将支付宝返回的元字符串解析为分进行整数比较，避免浮点精度问题）
+	notifyAmountCents, err := parseYuanToCents(totalAmount)
+	if err != nil || notifyAmountCents != order.Money {
+		log.Printf("[接收通知] %s 订单金额不一致(订单:%d分,通知:%s元), 订单号: %s", pluginType, order.Money, totalAmount, orderNo)
 		c.String(http.StatusBadRequest, "fail")
 		return
 	}
 
-	if flag {
-		// 记录查单日志
-		plugin.AddQueryLogReq(h.DB, orderNo,
-			fmt.Sprintf("api/pay/order/notify/%s/%d/", pluginType, productID),
-			data, "POST", order.OutOrderNo, "")
+	// 记录查单日志
+	plugin.AddQueryLogReq(h.DB, orderNo,
+		fmt.Sprintf("api/pay/order/notify/%s/%d/", pluginType, productID),
+		data, "POST", order.OutOrderNo, "")
 
-		// 更新票据号
-		h.DB.Model(&model.OrderDetail{}).
-			Where("order_id = ?", order.ID).
-			Update("ticket_no", ticketNo)
+	// 更新票据号
+	h.DB.Model(&model.OrderDetail{}).
+		Where("order_id = ?", order.ID).
+		Update("ticket_no", ticketNo)
 
-		// 检查插件是否确认通知成功
-		responder := plugin.GetByKey(pluginType)
-		if responder != nil {
-			dataMap := make(map[string]interface{})
-			for k, v := range data {
-				dataMap[k] = v
-			}
-			if responder.CheckNotifySuccess(dataMap) {
-				// 通知成功，触发订单完成流程
-				go h.successOrder(orderNo, payTime, pluginType)
-			}
-		} else {
-			// 没有对应插件，默认走成功流程
+	// 检查插件是否确认通知成功
+	responder := plugin.GetByKey(pluginType)
+	if responder != nil {
+		dataMap := make(map[string]interface{})
+		for k, v := range data {
+			dataMap[k] = v
+		}
+		if responder.CheckNotifySuccess(dataMap) {
+			// 通知成功，触发订单完成流程
 			go h.successOrder(orderNo, payTime, pluginType)
 		}
-
-		c.String(http.StatusOK, "success")
 	} else {
-		log.Printf("[接收通知] %s 验签失败, 订单号: %s", pluginType, orderNo)
-		c.String(http.StatusBadRequest, "fail")
+		// 没有对应插件，默认走成功流程
+		go h.successOrder(orderNo, payTime, pluginType)
 	}
+
+	c.String(http.StatusOK, "success")
 }
 
 // successOrder 订单完成流程
@@ -227,6 +226,40 @@ func (h *NotifyHandler) triggerMerchantNotify(orderNo string) {
 	}
 
 	go h.NotificationFactory.StartMerchantNotify(orderNo, detail.NotifyURL, detail.NotifyMoney, payTime, 5)
+}
+
+// parseYuanToCents 将元字符串解析为分（整数），避免浮点精度问题
+// 例如: "9.99" -> 999, "0.01" -> 1, "100.00" -> 10000
+func parseYuanToCents(yuan string) (int, error) {
+	yuan = strings.TrimSpace(yuan)
+	if yuan == "" {
+		return 0, fmt.Errorf("空金额")
+	}
+	parts := strings.SplitN(yuan, ".", 2)
+	intPart, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, err
+	}
+	cents := intPart * 100
+	if len(parts) == 2 {
+		decStr := parts[1]
+		// 补齐到2位
+		for len(decStr) < 2 {
+			decStr += "0"
+		}
+		// 只取前2位
+		decStr = decStr[:2]
+		dec, err := strconv.Atoi(decStr)
+		if err != nil {
+			return 0, err
+		}
+		if intPart < 0 {
+			cents -= dec
+		} else {
+			cents += dec
+		}
+	}
+	return cents, nil
 }
 
 // NotifyTest 通知测试接口
