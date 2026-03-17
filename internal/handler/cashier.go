@@ -439,11 +439,7 @@ func (h *CashierHandler) AlipayApp(c *gin.Context) {
 		return
 	}
 
-	// 确保引号转义正确
-	if strings.Contains(sdk, "\"") && !strings.Contains(sdk, "\\\"") {
-		sdk = strings.ReplaceAll(sdk, "\"", "\\\"")
-	}
-
+	// html/template 会自动对 <script> 内的内容做 JS 上下文转义，无需手动处理引号
 	h.renderTemplate(c, "alipay_app.html", templateData{SDK: sdk})
 }
 
@@ -501,7 +497,7 @@ func (h *CashierHandler) YunshuPay(c *gin.Context) {
 	tradeNo := c.Param("trade_no")
 
 	var order model.Order
-	if err := h.DB.Where("id = ?", orderNo).First(&order).Error; err != nil {
+	if err := h.DB.Where("order_no = ?", orderNo).First(&order).Error; err != nil {
 		response.ErrorResponse(c, "订单不存在")
 		return
 	}
