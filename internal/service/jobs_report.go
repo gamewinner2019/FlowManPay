@@ -189,7 +189,14 @@ func (s *JobsService) ReportTenantPre() {
 
 	for _, tenant := range tenants {
 		t := tenant // 避免闭包引用
-		go s.ReportTenantPreJob(&t, today)
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("[Jobs] 租户商户报告异常: tenant_id=%d, err=%v", t.ID, r)
+				}
+			}()
+			s.ReportTenantPreJob(&t, today)
+		}()
 	}
 }
 
@@ -293,7 +300,14 @@ func (s *JobsService) ReportSplitPre() {
 
 	for _, tenant := range tenants {
 		t := tenant
-		go s.ReportSplitPreJob(&t, today)
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("[Jobs] 租户归集报告异常: tenant_id=%d, err=%v", t.ID, r)
+				}
+			}()
+			s.ReportSplitPreJob(&t, today)
+		}()
 	}
 }
 
