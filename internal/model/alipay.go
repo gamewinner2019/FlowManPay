@@ -594,3 +594,89 @@ type QuickTransferHistory struct {
 func (QuickTransferHistory) TableName() string {
 	return TablePrefix + "quick_transfer_history"
 }
+
+// ===== AlipaySubProduct 支付宝直付通二级商户 =====
+
+// AlipaySubProduct 支付宝直付通二级商户（进件）
+type AlipaySubProduct struct {
+	ExternalID           string         `gorm:"size:16;primaryKey" json:"external_id"`                    // 外部ID（主键）
+	IndirectID           uint           `gorm:"index" json:"indirect"`                                    // 直付通父级
+	Indirect             *AlipayProduct `gorm:"foreignKey:IndirectID" json:"indirect_obj,omitempty"`
+	WriteoffID           uint           `gorm:"index" json:"writeoff"`                                    // 关联核销
+	Writeoff             *WriteOff      `gorm:"foreignKey:WriteoffID" json:"writeoff_obj,omitempty"`
+	Name                 *string        `gorm:"size:128" json:"name"`                                     // 进件的二级商户名称
+	AliasName            *string        `gorm:"size:512" json:"alias_name"`                               // 商户别名
+	MerchantType         *string        `gorm:"size:2" json:"merchant_type"`                              // 商家类型
+	Mcc                  *string        `gorm:"size:10" json:"mcc"`                                       // 商户类别码
+	CertNo               *string        `gorm:"size:20" json:"cert_no"`                                   // 商户证件编号
+	CertType             *string        `gorm:"size:20" json:"cert_type"`                                 // 商户证件类型
+	CertImage            *string        `gorm:"size:256" json:"cert_image"`                               // 商户证件图片url
+	CertImageBack        *string        `gorm:"size:256" json:"cert_image_back"`                          // 商户证件图片url(背面)
+	LegalName            *string        `gorm:"size:64" json:"legal_name"`                                // 法人名称
+	LegalCertNo          *string        `gorm:"size:18" json:"legal_cert_no"`                             // 法人身份证号
+	ContactInfos         JSONSlice      `gorm:"type:json" json:"contact_infos"`                           // 联系人信息
+	BizCards             JSONSlice      `gorm:"type:json" json:"biz_cards"`                               // 结算银行卡
+	AlipayLogonID        *string        `gorm:"size:64" json:"alipay_logon_id"`                           // 结算支付宝账号
+	BindingAlipayLogonID *string        `gorm:"size:64" json:"binding_alipay_logon_id"`                   // 签约支付宝账户
+	Service              JSONSlice      `gorm:"type:json" json:"service"`                                 // 商户使用服务
+	DefaultSettleRule    JSONMap         `gorm:"type:json" json:"default_settle_rule"`                     // 默认结算规则
+	BusinessAddress      JSONMap         `gorm:"type:json" json:"business_address"`                        // 经营地址
+	InvoiceInfo          JSONMap         `gorm:"type:json" json:"invoice_info"`                            // 开票资料信息
+	OutDoorImages        JSONSlice      `gorm:"type:json" json:"out_door_images"`                         // 门头照
+	InDoorImages         JSONSlice      `gorm:"type:json" json:"in_door_images"`                          // 内景照
+	LegalCertBackImage   *string        `gorm:"size:256" json:"legal_cert_back_image"`                    // 法人身份证反面图
+	LegalCertFrontImage  *string        `gorm:"size:256" json:"legal_cert_front_image"`                   // 法人身份证正面图
+	LicenseAuthLetterImage *string      `gorm:"size:256" json:"license_auth_letter_image"`                // 授权函
+	Sites                JSONSlice      `gorm:"type:json" json:"sites"`                                   // 商户站点信息
+	Qualifications       JSONSlice      `gorm:"type:json" json:"qualifications"`                          // 商户行业资质
+	Smid                 *string        `gorm:"size:32" json:"smid"`                                      // 二级商户id
+	ServicePhone         *string        `gorm:"size:20" json:"service_phone"`                             // 客服电话
+	SignTimeWithIsv      *string        `gorm:"size:20" json:"sign_time_with_isv"`                        // 二级商户与服务商签约时间
+	CertName             *string        `gorm:"size:64" json:"cert_name"`                                 // 个体工商户营业执照
+	LegalCertType        *string        `gorm:"size:8" json:"legal_cert_type"`                            // 身份证类型
+	MerchantNature       *string        `gorm:"size:32" json:"merchant_nature"`                           // 商家性质
+	Description          string         `gorm:"size:255;default:''" json:"description"`
+	Creator              *uint          `gorm:"index" json:"creator"`
+	Modifier             *uint          `json:"modifier"`
+	CreateDatetime       time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime       time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt            gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (AlipaySubProduct) TableName() string {
+	return TablePrefix + "alipay_sub_product"
+}
+
+// ===== AlipaySubProductRequestHistory 直付通进件请求历史 =====
+
+// AlipaySubProductRequestHistory 直付通进件请求历史
+type AlipaySubProductRequestHistory struct {
+	ID                   uint           `gorm:"primaryKey" json:"id"`
+	OrderID              string         `gorm:"size:64" json:"order_id"`                                  // 申请单id
+	SubMerchantID        string         `gorm:"size:16;index" json:"sub_merchant_id"`                     // 关联二级商户
+	SubMerchant          *AlipaySubProduct `gorm:"foreignKey:SubMerchantID;references:ExternalID" json:"sub_merchant,omitempty"`
+	Status               string         `gorm:"size:3;default:'031'" json:"status"`                       // 状态
+	SubConfirm           *string        `gorm:"size:10" json:"sub_confirm"`                               // 二级商户确认状态
+	FkAudit              *string        `gorm:"size:10" json:"fk_audit"`                                  // 风控审核状态
+	FkAuditMemo          *string        `gorm:"size:64" json:"fk_audit_memo"`                             // 风控审批备注
+	KzAudit              *string        `gorm:"size:10" json:"kz_audit"`                                  // 客资审核状态
+	KzAuditMemo          *string        `gorm:"size:64" json:"kz_audit_memo"`                             // 客资审批备注
+	CardAliasNo          *string        `gorm:"size:32" json:"card_alias_no"`                             // 进件生成的卡编号
+	Smid                 *string        `gorm:"size:32" json:"smid"`                                      // 二级商户id
+	AppPreAuth           *string        `gorm:"size:5" json:"app_pre_auth"`                               // 是否开通线上预授权
+	FacePreAuth          *string        `gorm:"size:5" json:"face_pre_auth"`                              // 是否开通线下预授权
+	IsFaceLimit          *string        `gorm:"size:5" json:"is_face_limit"`                              // 个人当面付权限版本
+	Reason               *string        `gorm:"size:256" json:"reason"`                                   // 申请单处理失败理由
+	SubSignQrCodeURL     *string        `gorm:"size:256" json:"sub_sign_qr_code_url"`                    // 自助签约二维码链接
+	SubSignShortChainURL *string        `gorm:"size:256" json:"sub_sign_short_chain_url"`                // 签约确认短链接
+	Description          string         `gorm:"size:255;default:''" json:"description"`
+	Creator              *uint          `gorm:"index" json:"creator"`
+	Modifier             *uint          `json:"modifier"`
+	CreateDatetime       time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime       time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt            gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (AlipaySubProductRequestHistory) TableName() string {
+	return TablePrefix + "alipay_sub_product_request_history"
+}

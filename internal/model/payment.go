@@ -73,6 +73,37 @@ func (j *JSONIntSlice) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, j)
 }
 
+// JSONSlice 用于存储JSON数组字段(通用 []interface{})
+type JSONSlice []interface{}
+
+func (j JSONSlice) Value() (driver.Value, error) {
+	if j == nil {
+		return "[]", nil
+	}
+	data, err := json.Marshal(j)
+	if err != nil {
+		return nil, err
+	}
+	return string(data), nil
+}
+
+func (j *JSONSlice) Scan(value interface{}) error {
+	if value == nil {
+		*j = JSONSlice{}
+		return nil
+	}
+	var bytes []byte
+	switch v := value.(type) {
+	case string:
+		bytes = []byte(v)
+	case []byte:
+		bytes = v
+	default:
+		return fmt.Errorf("无法将 %T 转换为 JSONSlice", value)
+	}
+	return json.Unmarshal(bytes, j)
+}
+
 // JSONMap 用于存储JSON对象字段
 type JSONMap map[string]interface{}
 
