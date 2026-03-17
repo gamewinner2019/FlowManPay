@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gamewinner2019/FlowManPay/internal/model"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
@@ -427,7 +429,7 @@ func FormatMoney(money int) string {
 
 // PluginCreateOrder 通过插件创建订单（收银台调用）
 // 对应 Django 的 plugin_create_order(order_no, raw_order_no, ip, ua)
-func PluginCreateOrder(db *gorm.DB, rdb interface{}, orderNo string, rawOrderNo string, ip string, ua string) map[string]interface{} {
+func PluginCreateOrder(db *gorm.DB, rdb *redis.Client, orderNo string, rawOrderNo string, ip string, ua string) map[string]interface{} {
 	defaultRes := map[string]interface{}{
 		"code": float64(400),
 		"msg":  "订单生成失败",
@@ -461,7 +463,7 @@ func PluginCreateOrder(db *gorm.DB, rdb interface{}, orderNo string, rawOrderNo 
 	}
 
 	args := CreateOrderArgs{
-		RawOrderNo: rawOrderNo,
+		RawOrderNo: order.ID,
 		OrderNo:    orderNo,
 		OutOrderNo: order.OutOrderNo,
 		IP:         ip,
@@ -510,12 +512,19 @@ func PluginCreateOrder(db *gorm.DB, rdb interface{}, orderNo string, rawOrderNo 
 		"data": result.Data,
 	}
 
+	// 缓存结果到Redis，避免重复调用插件
+	if rdb != nil {
+		if resJSON, err := json.Marshal(res); err == nil {
+			rdb.Set(context.Background(), fmt.Sprintf("%s-res", orderNo), string(resJSON), 300*time.Second)
+		}
+	}
+
 	return res
 }
 
 // PluginQueryOrder 通过插件查询订单（收银台调用）
 // 对应 Django 的 plugin_query_order(order_no)
-func PluginQueryOrder(db *gorm.DB, rdb interface{}, orderNo string) {
+func PluginQueryOrder(db *gorm.DB, rdb *redis.Client, orderNo string) {
 	var order model.Order
 	if err := db.Where("order_no = ?", orderNo).First(&order).Error; err != nil {
 		log.Printf("PluginQueryOrder: 订单 %s 不存在", orderNo)
