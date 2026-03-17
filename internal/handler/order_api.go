@@ -554,6 +554,24 @@ func (h *OrderAPIHandler) Reorder(c *gin.Context) {
 		return
 	}
 
+	// 只允许对生成中、出码失败、等待支付、支付失败、支付成功(通知未返回)状态的订单进行补单
+	allowedStatuses := []model.OrderStatus{
+		model.OrderStatusInProduction, model.OrderStatusErrorProduction,
+		model.OrderStatusWaitPay, model.OrderStatusErrorPay,
+		model.OrderStatusSuccessPre,
+	}
+	statusAllowed := false
+	for _, s := range allowedStatuses {
+		if order.OrderStatus == s {
+			statusAllowed = true
+			break
+		}
+	}
+	if !statusAllowed {
+		response.ErrorResponse(c, "订单状态不允许补单")
+		return
+	}
+
 	// 订单归属权检查（复用 OrderHandler 的权限逻辑）
 	if !h.checkOrderOwnership(c, &order) {
 		return
