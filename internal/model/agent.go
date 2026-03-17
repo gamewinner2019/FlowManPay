@@ -139,13 +139,16 @@ type TenantCashFlow struct {
 	TenantID       uint               `gorm:"index" json:"tenant_id"`
 	Tenant         *Tenant            `gorm:"foreignKey:TenantID" json:"tenant,omitempty"`
 	FlowType       TenantCashFlowType `gorm:"default:0" json:"flow_type"`
-	Money          int64              `gorm:"default:0" json:"money"`       // 变动金额
-	BeforeMoney    int64              `gorm:"default:0" json:"before_money"` // 变动前余额
-	AfterMoney     int64              `gorm:"default:0" json:"after_money"`  // 变动后余额
-	OrderNo        string             `gorm:"size:32" json:"order_no"`
-	Remark         string             `gorm:"size:255" json:"remark"`
-	Creator        *uint              `json:"creator"`
-	CreateDatetime time.Time          `gorm:"autoCreateTime" json:"create_datetime"`
+	OldMoney       int64              `gorm:"default:0" json:"old_money"`       // 变更前余额
+	NewMoney       int64              `gorm:"default:0" json:"new_money"`       // 变更后余额
+	ChangeMoney    int64              `gorm:"default:0" json:"change_money"`    // 变更余额
+	PayChannelID   *uint              `json:"pay_channel_id"`                   // 支付通道
+	OrderID        *string            `gorm:"size:30" json:"order_id"`          // 系统订单
+	Description    string             `gorm:"size:255;default:''" json:"description"`
+	Creator        *uint              `gorm:"index" json:"creator"`
+	Modifier       *uint              `json:"modifier"`
+	CreateDatetime time.Time          `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime time.Time          `gorm:"autoUpdateTime" json:"update_datetime"`
 }
 
 func (TenantCashFlow) TableName() string {
@@ -158,14 +161,17 @@ type WriteoffCashFlow struct {
 	WriteoffID     uint                 `gorm:"index" json:"writeoff_id"`
 	Writeoff       *WriteOff            `gorm:"foreignKey:WriteoffID" json:"writeoff,omitempty"`
 	FlowType       WriteoffCashFlowType `gorm:"default:0" json:"flow_type"`
-	Money          int64                `gorm:"default:0" json:"money"`
-	BeforeMoney    int64                `gorm:"default:0" json:"before_money"`
-	AfterMoney     int64                `gorm:"default:0" json:"after_money"`
+	OldMoney       int64                `gorm:"default:0" json:"old_money"`       // 变更前余额
+	NewMoney       int64                `gorm:"default:0" json:"new_money"`       // 变更后余额
+	ChangeMoney    int64                `gorm:"default:0" json:"change_money"`    // 变更余额
 	Tax            float64              `gorm:"type:decimal(5,2);default:0" json:"tax"`
-	OrderNo        string               `gorm:"size:32" json:"order_no"`
-	Remark         string               `gorm:"size:255" json:"remark"`
-	Creator        *uint                `json:"creator"`
-	CreateDatetime time.Time            `gorm:"autoCreateTime" json:"create_datetime"`
+	PayChannelID   *uint                `json:"pay_channel_id"`                   // 支付通道
+	OrderID        *string              `gorm:"size:30" json:"order_id"`          // 系统订单
+	Description    string               `gorm:"size:255;default:''" json:"description"`
+	Creator        *uint                `gorm:"index" json:"creator"`
+	Modifier       *uint                `json:"modifier"`
+	CreateDatetime time.Time            `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime time.Time            `gorm:"autoUpdateTime" json:"update_datetime"`
 }
 
 func (WriteoffCashFlow) TableName() string {
@@ -178,14 +184,18 @@ type WriteoffBrokerageFlow struct {
 	WriteoffID     uint      `gorm:"index" json:"writeoff_id"`
 	Writeoff       *WriteOff `gorm:"foreignKey:WriteoffID" json:"writeoff,omitempty"`
 	FromWriteoffID *uint     `json:"from_writeoff_id"`
-	Money          int64     `gorm:"default:0" json:"money"`
-	BeforeMoney    int64     `gorm:"default:0" json:"before_money"`
-	AfterMoney     int64     `gorm:"default:0" json:"after_money"`
+	FromWriteoff   *WriteOff `gorm:"foreignKey:FromWriteoffID" json:"from_writeoff,omitempty"`
+	OldMoney       int64     `gorm:"default:0" json:"old_money"`       // 变更前余额
+	NewMoney       int64     `gorm:"default:0" json:"new_money"`       // 变更后余额
+	ChangeMoney    int64     `gorm:"default:0" json:"change_money"`    // 变更余额
 	Tax            float64   `gorm:"type:decimal(5,2);default:0" json:"tax"`
-	OrderNo        string    `gorm:"size:32" json:"order_no"`
-	Remark         string    `gorm:"size:255" json:"remark"`
-	Creator        *uint     `json:"creator"`
-	CreateDatetime time.Time `gorm:"autoCreateTime" json:"create_datetime"`
+	PayChannelID   *uint     `json:"pay_channel_id"`                   // 支付通道
+	OrderID        *string   `gorm:"size:30" json:"order_id"`          // 系统订单
+	Description    string    `gorm:"size:255;default:''" json:"description"`
+	Creator        *uint     `gorm:"index" json:"creator"`
+	Modifier       *uint     `json:"modifier"`
+	CreateDatetime time.Time `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime time.Time `gorm:"autoUpdateTime" json:"update_datetime"`
 }
 
 func (WriteoffBrokerageFlow) TableName() string {

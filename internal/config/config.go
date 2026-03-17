@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	cfg  *Config
-	once sync.Once
+	cfg        *Config
+	cfgLoadErr error
+	once       sync.Once
 )
 
 type Config struct {
@@ -47,12 +48,21 @@ func itoa(i int) string {
 	if i == 0 {
 		return "0"
 	}
+	neg := false
+	if i < 0 {
+		neg = true
+		i = -i
+	}
 	var buf [20]byte
 	pos := len(buf)
 	for i > 0 {
 		pos--
 		buf[pos] = byte('0' + i%10)
 		i /= 10
+	}
+	if neg {
+		pos--
+		buf[pos] = '-'
 	}
 	return string(buf[pos:])
 }
@@ -75,30 +85,30 @@ type JWTConfig struct {
 }
 
 type SystemConfig struct {
-	TablePrefix     string `yaml:"table_prefix"`
-	CaptchaState    bool   `yaml:"captcha_state"`
-	SingleLogin     bool   `yaml:"single_login"`
-	DefaultPassword string `yaml:"default_password"`
-	Timezone        string `yaml:"timezone"`
+	TablePrefix        string `yaml:"table_prefix"`
+	CaptchaState       bool   `yaml:"captcha_state"`
+	SingleLogin        bool   `yaml:"single_login"`
+	DefaultPassword    string `yaml:"default_password"`
+	Timezone           string `yaml:"timezone"`
+	LoginNoCaptchaAuth bool   `yaml:"login_no_captcha_auth"`
 }
 
 // Load reads the config file and returns the Config struct.
 func Load(path string) (*Config, error) {
-	var loadErr error
 	once.Do(func() {
 		data, err := os.ReadFile(path)
 		if err != nil {
-			loadErr = err
+			cfgLoadErr = err
 			return
 		}
 		cfg = &Config{}
 		if err := yaml.Unmarshal(data, cfg); err != nil {
-			loadErr = err
+			cfgLoadErr = err
 			cfg = nil
 			return
 		}
 	})
-	return cfg, loadErr
+	return cfg, cfgLoadErr
 }
 
 // Get returns the loaded config. Must call Load first.

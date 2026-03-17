@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -219,18 +220,24 @@ func (h *TenantHandler) ChangeMoney(c *gin.Context) {
 		beforeMoney := tenant.Balance
 		afterMoney := beforeMoney + req.Money
 
-		if err := tx.Model(&tenant).Update("balance", afterMoney).Error; err != nil {
-			return err
+		result := tx.Model(&tenant).Where("version = ?", tenant.Version).Updates(map[string]interface{}{
+			"balance": afterMoney,
+			"version": tenant.Version + 1,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("数据已被修改，请重试")
 		}
 
 		// 记录流水
 		cashFlow := model.TenantCashFlow{
 			TenantID:    tenant.ID,
 			FlowType:    model.TenantCashFlowAdjust,
-			Money:       req.Money,
-			BeforeMoney: beforeMoney,
-			AfterMoney:  afterMoney,
-			Remark:      req.Remark,
+			ChangeMoney: req.Money,
+			OldMoney:    beforeMoney,
+			NewMoney:    afterMoney,
 			Creator:     &currentUser.ID,
 		}
 		return tx.Create(&cashFlow).Error

@@ -42,8 +42,8 @@ func Init() *gorm.DB {
 	}
 
 	// 连接池配置
-	sqlDB.SetMaxIdleConns(10)
-	sqlDB.SetMaxOpenConns(100)
+	sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConns)
+	sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConns)
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
 	// 自动迁移
@@ -84,6 +84,39 @@ func autoMigrate() {
 		&model.TenantCashFlow{},
 		&model.WriteoffCashFlow{},
 		&model.WriteoffBrokerageFlow{},
+		// 支付模型
+		&model.PayType{},
+		&model.PayPlugin{},
+		&model.PayPluginConfig{},
+		&model.PayChannel{},
+		&model.PayChannelTax{},
+		&model.MerchantPayChannel{},
+		&model.WriteoffPayChannel{},
+		&model.PayDomain{},
+		&model.RechargeHistory{},
+		&model.ProductTax{},
+		// 订单模型
+		&model.Order{},
+		&model.OrderDetail{},
+		&model.OrderDeviceDetails{},
+		&model.ReOrder{},
+		&model.OrderLog{},
+		&model.QueryLog{},
+		// 通知模型
+		&model.MerchantNotification{},
+		&model.MerchantNotificationHistory{},
+		&model.PhoneProductNotificationHistory{},
+		&model.HouseProductNotificationHistory{},
+		// 统计模型
+		&model.TenantDayStatistics{},
+		&model.MerchantDayStatistics{},
+		&model.WriteOffDayStatistics{},
+		&model.WriteOffChannelDayStatistics{},
+		&model.PayChannelDayStatistics{},
+		&model.DayStatistics{},
+		// 封禁模型
+		&model.BanUserId{},
+		&model.BanIp{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

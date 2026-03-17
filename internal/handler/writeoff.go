@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -248,17 +249,23 @@ func (h *WriteOffHandler) ChangeMoney(c *gin.Context) {
 		}
 		afterMoney := beforeMoney + req.Money
 
-		if err := tx.Model(&writeoff).Update("balance", afterMoney).Error; err != nil {
-			return err
+		result := tx.Model(&writeoff).Where("version = ?", writeoff.Version).Updates(map[string]interface{}{
+			"balance": afterMoney,
+			"version": writeoff.Version + 1,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("数据已被修改，请重试")
 		}
 
 		cashFlow := model.WriteoffCashFlow{
 			WriteoffID:  writeoff.ID,
 			FlowType:    model.WriteoffCashFlowAdjust,
-			Money:       req.Money,
-			BeforeMoney: beforeMoney,
-			AfterMoney:  afterMoney,
-			Remark:      req.Remark,
+			ChangeMoney: req.Money,
+			OldMoney:    beforeMoney,
+			NewMoney:    afterMoney,
 			Creator:     &currentUser.ID,
 		}
 		return tx.Create(&cashFlow).Error
@@ -308,8 +315,15 @@ func (h *WriteOffHandler) Transfer(c *gin.Context) {
 			return gorm.ErrInvalidData
 		}
 		fromAfter := fromBefore - req.Money
-		if err := tx.Model(&from).Update("balance", fromAfter).Error; err != nil {
-			return err
+		result := tx.Model(&from).Where("version = ?", from.Version).Updates(map[string]interface{}{
+			"balance": fromAfter,
+			"version": from.Version + 1,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("数据已被修改，请重试")
 		}
 
 		// 增加目标核销余额
@@ -322,29 +336,38 @@ func (h *WriteOffHandler) Transfer(c *gin.Context) {
 			toBefore = *to.Balance
 		}
 		toAfter := toBefore + req.Money
-		if err := tx.Model(&to).Update("balance", toAfter).Error; err != nil {
-			return err
+		result = tx.Model(&to).Where("version = ?", to.Version).Updates(map[string]interface{}{
+			"balance": toAfter,
+			"version": to.Version + 1,
+		})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return errors.New("数据已被修改，请重试")
 		}
 
 		// 记录双方流水
-		tx.Create(&model.WriteoffCashFlow{
+		if err := tx.Create(&model.WriteoffCashFlow{
 			WriteoffID:  from.ID,
 			FlowType:    model.WriteoffCashFlowTransfer,
-			Money:       -req.Money,
-			BeforeMoney: fromBefore,
-			AfterMoney:  fromAfter,
-			Remark:      req.Remark,
+			ChangeMoney: -req.Money,
+			OldMoney:    fromBefore,
+			NewMoney:    fromAfter,
 			Creator:     &currentUser.ID,
-		})
-		tx.Create(&model.WriteoffCashFlow{
+		}).Error; err != nil {
+			return err
+		}
+		if err := tx.Create(&model.WriteoffCashFlow{
 			WriteoffID:  to.ID,
 			FlowType:    model.WriteoffCashFlowTransfer,
-			Money:       req.Money,
-			BeforeMoney: toBefore,
-			AfterMoney:  toAfter,
-			Remark:      req.Remark,
+			ChangeMoney: req.Money,
+			OldMoney:    toBefore,
+			NewMoney:    toAfter,
 			Creator:     &currentUser.ID,
-		})
+		}).Error; err != nil {
+			return err
+		}
 
 		return nil
 	})
