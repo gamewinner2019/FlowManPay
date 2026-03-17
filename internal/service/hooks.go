@@ -259,6 +259,7 @@ func (s *CashFlowService) DeductTenantBalance(tenantID uint, tax int64, payChann
 		"version": gorm.Expr("version + 1"),
 	})
 	if result.RowsAffected == 0 {
+		log.Printf("[CashFlow] 租户%d余额扣减冲突(version=%d), 手续费%d分丢失", tenantID, tenant.Version, tax)
 		return
 	}
 

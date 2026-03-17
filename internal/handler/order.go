@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -113,15 +114,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// 4. 检查商户订单号
-	if err := h.OrderService.CheckOutOrderNo(ctx); err != nil {
-		if ope, ok := err.(*service.OrderProcessingError); ok {
-			response.ErrorResponseWithCode(c, ope.Code, ope.Msg)
-			return
-		}
-		response.ErrorResponse(c, err.Error())
-		return
-	}
+	// 4. 检查商户订单号（移至事务内，防止 TOCTOU 竞态）
 
 	// 5. 检查通道
 	if err := h.OrderService.CheckChannel(ctx, req.ChannelID); err != nil {
@@ -155,6 +148,10 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 	// 8. 创建订单 + 订单详情（事务保证原子性）
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		// 检查商户订单号（在事务内执行，防止 TOCTOU 竞态）
+		if err := h.OrderService.CheckOutOrderNo(ctx, tx); err != nil {
+			return err
+		}
 		if err := h.OrderService.TryCreateOrder(ctx, nil, tx); err != nil {
 			return err
 		}
@@ -509,8 +506,17 @@ func (h *OrderHandler) Close(c *gin.Context) {
 		return
 	}
 
-	if err := h.DB.Model(&order).Update("order_status", model.OrderStatusClosed).Error; err != nil {
+	// 原子更新订单状态（防止并发关闭覆盖已支付状态）
+	result := h.DB.Model(&model.Order{}).
+		Where("id = ? AND order_status IN ?", order.ID,
+			[]model.OrderStatus{model.OrderStatusWaitPay, model.OrderStatusInProduction}).
+		Update("order_status", model.OrderStatusClosed)
+	if result.Error != nil {
 		response.ErrorResponse(c, "关闭失败")
+		return
+	}
+	if result.RowsAffected == 0 {
+		response.ErrorResponse(c, "订单状态已变更，无法关闭")
 		return
 	}
 
@@ -545,9 +551,16 @@ func (h *OrderHandler) Refund(c *gin.Context) {
 	}
 
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
-		// 更新订单状态
-		if err := tx.Model(&order).Update("order_status", model.OrderStatusRefund).Error; err != nil {
-			return err
+		// 原子更新订单状态（防止并发双重退款）
+		result := tx.Model(&model.Order{}).
+			Where("id = ? AND order_status IN ?", order.ID,
+				[]model.OrderStatus{model.OrderStatusSuccess, model.OrderStatusSuccessPre}).
+			Update("order_status", model.OrderStatusRefund)
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return fmt.Errorf("订单状态已变更，无法退款")
 		}
 
 		// 退还租户手续费

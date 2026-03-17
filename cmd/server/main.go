@@ -60,6 +60,9 @@ func main() {
 	// 初始化原生管理-支付宝 Handler
 	alipayNativeHandler := handler.NewAlipayNativeHandler(db)
 
+	// 初始化业务模块 Handler
+	businessHandler := handler.NewBusinessHandler(db, rdb)
+
 	// 注册内置 Hook
 	service.RegisterBuiltinHooks(db)
 
@@ -93,6 +96,9 @@ func main() {
 		// 支付回调通知接口（公开，由第三方支付平台回调）
 		api.POST("/pay/order/notify/:plugin_type/:product_id/", notifyHandler.AlipayNotify)
 		api.GET("/pay/order/notify/test/", notifyHandler.NotifyTest)
+
+		// Telegram Bot 回调（公开，由外部 Telegram Bot 调用）
+		api.POST("/business/tenant_yufu/bot/telegram/", businessHandler.TenantYufuBotTelegram)
 	}
 
 	// ===== 需要认证的接口 =====
@@ -433,6 +439,111 @@ func main() {
 				shenma.GET("/:id/pay_channel/", alipayNativeHandler.ShenmaPayChannel)
 			}
 		}
+
+		// ===== 业务模块 =====
+		business := auth.Group("/business")
+		{
+			// 商户通知管理
+			business.GET("/merchant_notification/", businessHandler.MerchantNotificationList)
+
+			// 商户预付历史
+			merchantPre := business.Group("/merchant_pre")
+			{
+				merchantPre.GET("/history/", businessHandler.MerchantPreHistoryList)
+				merchantPre.GET("/history/statistics/", businessHandler.MerchantPreHistoryStatistics)
+			}
+
+			// 核销流水
+			writeoffFlow := business.Group("/writeoff_flow")
+			{
+				writeoffFlow.GET("/", businessHandler.WriteoffCashFlowList)
+				writeoffFlow.GET("/brokerage/", businessHandler.WriteoffBrokerageFlowList)
+			}
+
+			// 核销预付历史
+			writeoffPre := business.Group("/writeoff_pre")
+			{
+				writeoffPre.GET("/history/", businessHandler.WriteoffPreHistoryList)
+				writeoffPre.GET("/history/statistics/", businessHandler.WriteoffPreHistoryStatistics)
+			}
+
+			// 租户流水
+			business.GET("/tenant_flow/", businessHandler.TenantCashFlowList)
+
+			// 订单设备管理
+			orderDevice := business.Group("/order_device")
+			{
+				orderDevice.GET("/", businessHandler.OrderDeviceList)
+					orderDevice.POST("/ban_ip/:id/", businessHandler.OrderDeviceBanIP)
+				orderDevice.POST("/ban_userid/:id/", businessHandler.OrderDeviceBanUserID)
+				orderDevice.GET("/statistics/", businessHandler.OrderDeviceStatistics)
+			}
+
+			// 重新下单记录
+			business.GET("/reorder/", businessHandler.ReOrderList)
+
+			// 租户预付用户(Telegram)
+			tenantYufu := business.Group("/tenant_yufu")
+			{
+				tenantYufu.GET("/", businessHandler.TenantYufuUserList)
+				tenantYufu.POST("/", businessHandler.TenantYufuUserCreate)
+					tenantYufu.DELETE("/:id/", businessHandler.TenantYufuUserDelete)
+					// Note: /bot/telegram/ is registered as public route (no JWT) since it's called by external Telegram bots
+			}
+
+			// 归集用户日统计
+			collectionStats := business.Group("/collection_statistics")
+			{
+				collectionStats.GET("/", businessHandler.CollectionUserDayStatisticsList)
+				collectionStats.GET("/statistics/", businessHandler.CollectionUserDayStatisticsStatistics)
+			}
+
+			// 租户小号/Cookie管理
+			tenantAccount := business.Group("/tenant_account")
+			{
+				// 文件管理
+				file := tenantAccount.Group("/file")
+				{
+					file.GET("/", businessHandler.TenantCookieFileList)
+					file.POST("/", businessHandler.TenantCookieFileCreate)
+					file.PUT("/:id/", businessHandler.TenantCookieFileUpdate)
+					file.DELETE("/:id/", businessHandler.TenantCookieFileDelete)
+					file.GET("/:id/export/", businessHandler.TenantCookieFileExport)
+				}
+				// Cookie管理
+				cookie := tenantAccount.Group("/cookie")
+				{
+					cookie.GET("/", businessHandler.TenantCookieList)
+					cookie.PUT("/:id/", businessHandler.TenantCookieUpdate)
+					cookie.DELETE("/:id/", businessHandler.TenantCookieDelete)
+					cookie.GET("/args/", businessHandler.TenantCookieArgs)
+					cookie.GET("/count/", businessHandler.TenantCookieCount)
+				}
+			}
+
+			// 话单管理
+			phoneOrder := business.Group("/phone_order")
+			{
+				phoneOrder.GET("/", businessHandler.PhoneOrderList)
+				phoneOrder.DELETE("/:id/", businessHandler.PhoneOrderDelete)
+				phoneOrder.GET("/statistics/money/", businessHandler.PhoneOrderStatisticsMoney)
+				phoneOrder.GET("/product/", businessHandler.PhoneOrderProduct)
+				phoneOrder.GET("/statistics/", businessHandler.PhoneOrderStatistics)
+			}
+
+			// 日统计管理
+			dayStats := business.Group("/day_statistics")
+			{
+				dayStats.GET("/merchant/", businessHandler.MerchantDayStatisticsList)
+				dayStats.GET("/writeoff/", businessHandler.WriteoffDayStatisticsList)
+				dayStats.GET("/tenant/", businessHandler.TenantDayStatisticsList)
+				dayStats.GET("/pay_channel/", businessHandler.PayChannelDayStatisticsList)
+				dayStats.GET("/all/", businessHandler.AllDayStatisticsList)
+			}
+		}
+
+		// ===== 域名鉴权（nginx subrequest） =====
+		auth.GET("/auth_responder/check/:domain/", businessHandler.AuthResponderCheckAuth)
 	}
 
 	// 启动服务

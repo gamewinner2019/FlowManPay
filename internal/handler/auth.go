@@ -63,7 +63,7 @@ func (h *AuthHandler) Captcha(c *gin.Context) {
 
 		// 将验证码存入Redis, 5分钟过期
 		ctx := context.Background()
-		code := base64Captcha.DefaultMemStore.Get(id, false)
+		code := base64Captcha.DefaultMemStore.Get(id, true)
 		captchaKey := fmt.Sprintf("captcha:%s", id)
 		h.RDB.Set(ctx, captchaKey, code, 5*time.Minute)
 
@@ -101,10 +101,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		response.ErrorResponse(c, "请输入验证码")
 		return
 	}
-	if req.CaptchaKey != "" {
+	if captchaRequired && req.CaptchaKey != "" {
 		ctx := context.Background()
+		if req.Captcha == "" {
+			response.ErrorResponse(c, "请输入验证码")
+			return
+		}
 		cachedCode, err := h.RDB.Get(ctx, "captcha:"+req.CaptchaKey).Result()
-		if err != nil || cachedCode != req.Captcha {
+		if err != nil || cachedCode == "" || cachedCode != req.Captcha {
 			response.ErrorResponse(c, "验证码错误或已过期")
 			return
 		}

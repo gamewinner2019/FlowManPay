@@ -92,12 +92,16 @@ func (h *NotifyHandler) AlipayNotify(c *gin.Context) {
 	totalAmount := data["total_amount"]
 	ticketNo := data["trade_no"]
 
-	// 查找订单
+	// 查找订单（优先按 order_no 查，fallback 按 id 查——
+	// 部分插件如 gold/card_uid/confirm_uid 使用 RawOrderNo(即订单ID) 作为标识）
 	var order model.Order
 	if err := h.DB.Where("order_no = ?", orderNo).First(&order).Error; err != nil {
-		log.Printf("[接收通知] %s 订单不存在, 订单号: %s", pluginType, orderNo)
-		c.String(http.StatusBadRequest, "fail")
-		return
+		// fallback: 按订单ID查询
+		if err2 := h.DB.Where("id = ?", orderNo).First(&order).Error; err2 != nil {
+			log.Printf("[接收通知] %s 订单不存在, 订单号: %s", pluginType, orderNo)
+			c.String(http.StatusBadRequest, "fail")
+			return
+		}
 	}
 
 	// 验证金额（将支付宝返回的元字符串解析为分进行整数比较，避免浮点精度问题）
@@ -209,10 +213,21 @@ func (h *NotifyHandler) successOrder(orderNo string, payTimeStr string, pluginTy
 		if detail.PluginID != nil {
 			args.PluginID = int(*detail.PluginID)
 		}
+		if detail.ProductID != "" {
+			args.ProductID, _ = strconv.Atoi(detail.ProductID)
+		}
+		if order.PayChannelID != nil {
+			args.ChannelID = int(*order.PayChannelID)
+		}
 		if err := responder.CallbackSuccess(h.DB, args); err != nil {
 			log.Printf("[通知成功] 插件回调失败: %v", err)
 		}
 	}
+
+	// 触发成功 hooks（手续费扣减、统计更新等）
+	// 预加载 Merchant.Parent 以便 tenantIDFromOrder 获取租户ID
+	h.DB.Preload("Merchant").Preload("Merchant.Parent").Where("id = ?", order.ID).First(&order)
+	service.GetHookRegistry().TriggerSuccess(h.DB, &order, &detail)
 
 	// 触发商户通知
 	h.triggerMerchantNotify(orderNo)
@@ -247,6 +262,7 @@ func parseYuanToCents(yuan string) (int, error) {
 		return 0, fmt.Errorf("空金额")
 	}
 	parts := strings.SplitN(yuan, ".", 2)
+	negative := strings.HasPrefix(parts[0], "-")
 	intPart, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return 0, err
@@ -264,7 +280,7 @@ func parseYuanToCents(yuan string) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		if intPart < 0 {
+		if negative {
 			cents -= dec
 		} else {
 			cents += dec
@@ -333,11 +349,21 @@ func SuccessOrderByQuery(db *gorm.DB, orderNo string) {
 			if detail.PluginID != nil {
 				args.PluginID = int(*detail.PluginID)
 			}
+			if detail.ProductID != "" {
+				args.ProductID, _ = strconv.Atoi(detail.ProductID)
+			}
+			if order.PayChannelID != nil {
+				args.ChannelID = int(*order.PayChannelID)
+			}
 			if err := responder.CallbackSuccess(db, args); err != nil {
 				log.Printf("[查询完成] 插件回调失败: %v", err)
 			}
 		}
 	}
+
+	// 触发成功 hooks（手续费扣减、统计更新等）
+	db.Preload("Merchant").Preload("Merchant.Parent").Where("id = ?", order.ID).First(&order)
+	service.GetHookRegistry().TriggerSuccess(db, &order, &detail)
 
 	// 触发商户通知
 	triggerMerchantNotifyStatic(db, orderNo)
