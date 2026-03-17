@@ -37,7 +37,7 @@ func DetailResponse(c *gin.Context, data interface{}, msg string) {
 
 // ErrorResponse returns an error response
 func ErrorResponse(c *gin.Context, msg string, code ...int) {
-	respCode := 400
+	respCode := 4000
 	if len(code) > 0 {
 		respCode = code[0]
 	}
