@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 
 	"gorm.io/gorm"
@@ -344,6 +345,119 @@ type SplitHistory struct {
 
 func (SplitHistory) TableName() string {
 	return TablePrefix + "split_history"
+}
+
+// ===== AlipayProductTag 支付宝产品标签 =====
+
+// AlipayProductTag 支付宝产品标签
+type AlipayProductTag struct {
+	Name         string `gorm:"size:32;primaryKey" json:"name"`
+	SystemUserID *uint  `gorm:"index" json:"system_user_id"`
+	SystemUser   *Users `gorm:"foreignKey:SystemUserID" json:"system_user,omitempty"`
+	Sort         int    `gorm:"default:6" json:"sort"`
+}
+
+func (AlipayProductTag) TableName() string {
+	return TablePrefix + "alipay_product_tag"
+}
+
+// ===== AlipayTransferUser 支付宝转账用户 =====
+
+// AlipayTransferUser 支付宝转账用户
+type AlipayTransferUser struct {
+	ID              uint           `gorm:"primaryKey" json:"id"`
+	UsernameType    int            `gorm:"default:0" json:"username_type"`            // 0=UID 1=账户
+	Username        string         `gorm:"size:255" json:"username"`
+	Name            string         `gorm:"size:255" json:"name"`
+	Status          bool           `gorm:"default:true" json:"status"`
+	LimitMoney      int64          `gorm:"default:0" json:"limit_money"`
+	AlipayProductID *uint          `gorm:"index" json:"alipay_product_id"`
+	AlipayProduct   *AlipayProduct `gorm:"foreignKey:AlipayProductID" json:"alipay_product,omitempty"`
+	Description     string         `gorm:"size:255;default:''" json:"description"`
+	Creator         *uint          `gorm:"index" json:"creator"`
+	Modifier        *uint          `json:"modifier"`
+	CreateDatetime  time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime  time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (AlipayTransferUser) TableName() string {
+	return TablePrefix + "alipay_transfer_user"
+}
+
+// ===== TransferHistory 转账历史 =====
+
+// TransferHistory 转账历史记录
+type TransferHistory struct {
+	ID              string              `gorm:"size:25;primaryKey" json:"id"`
+	AlipayProductID *uint               `gorm:"index" json:"alipay_product_id"`
+	AlipayProduct   *AlipayProduct      `gorm:"foreignKey:AlipayProductID" json:"alipay_product,omitempty"`
+	OrderID         *string             `gorm:"size:30;index" json:"order_id"`
+	Order           *Order              `gorm:"foreignKey:OrderID" json:"order,omitempty"`
+	AlipayUserID    *uint               `gorm:"index" json:"alipay_user_id"`
+	AlipayUser      *AlipayTransferUser `gorm:"foreignKey:AlipayUserID" json:"alipay_user,omitempty"`
+	Money           int                 `gorm:"default:0" json:"money"`
+	Error           string              `gorm:"type:text" json:"error"`
+	TicketOrderNo   string              `gorm:"size:255" json:"ticket_order_no"`
+	UID             string              `gorm:"size:255" json:"uid"`
+	ProductName     string              `gorm:"size:255" json:"product_name"`
+	UserUsername    string              `gorm:"size:255" json:"user_username"`
+	UserUsernameType int               `gorm:"default:0" json:"user_username_type"`
+	UserName        string              `gorm:"size:255" json:"user_name"`
+	WriteoffName    string              `gorm:"size:255" json:"writeoff_name"`
+	WriteoffID      int64               `gorm:"default:0;index" json:"writeoff"`
+	TenantID        int64               `gorm:"default:0;index" json:"tenant_id"`
+	ProductType     int                 `gorm:"default:0" json:"product_type"`
+	SplitType       int                 `gorm:"default:0" json:"split_type"`
+	SettleNo        string              `gorm:"size:64" json:"settle_no"`
+	TransferStatus  int                 `gorm:"default:0" json:"transfer_status"` // 0=未转账 1=成功 2=失败
+	Version         int                 `gorm:"default:0" json:"-"`
+	Description     string              `gorm:"size:255;default:''" json:"description"`
+	Creator         *uint               `gorm:"index" json:"creator"`
+	Modifier        *uint               `json:"modifier"`
+	CreateDatetime  time.Time           `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime  time.Time           `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt       gorm.DeletedAt      `gorm:"index" json:"-"`
+}
+
+func (TransferHistory) TableName() string {
+	return TablePrefix + "transfer_history"
+}
+
+// CreateTransferOrderNo 生成转账单号
+func CreateTransferOrderNo() string {
+	now := time.Now()
+	return fmt.Sprintf("Z%s%06d%03d", now.Format("20060102150405"), now.Nanosecond()/1e3, now.Nanosecond()%1000)
+}
+
+// ===== AlipayComplain 支付宝投诉 =====
+
+// AlipayComplain 支付宝投诉
+type AlipayComplain struct {
+	ID               uint           `gorm:"primaryKey" json:"id"`
+	ComplainEventID  string         `gorm:"size:255;uniqueIndex" json:"complain_event_id"`
+	Status           string         `gorm:"size:32" json:"status"`
+	AlipayProductID  *uint          `gorm:"index" json:"alipay_product_id"`
+	AlipayProduct    *AlipayProduct `gorm:"foreignKey:AlipayProductID" json:"alipay_product,omitempty"`
+	TicketOrderNo    string         `gorm:"size:255" json:"ticket_order_no"`
+	Content          string         `gorm:"type:text" json:"content"`
+	LeafCategoryName string         `gorm:"size:255" json:"leaf_category_name"`
+	TargetType       string         `gorm:"size:32" json:"target_type"`
+	TargetID         string         `gorm:"size:255" json:"target_id"`
+	GMTCreation      string         `gorm:"size:32" json:"gmt_creation"`
+	GMTModified      string         `gorm:"size:32" json:"gmt_modified"`
+	GMTFinished      string         `gorm:"size:32" json:"gmt_finished"`
+	TradeNo          string         `gorm:"size:255" json:"trade_no"`
+	Description      string         `gorm:"size:255;default:''" json:"description"`
+	Creator          *uint          `gorm:"index" json:"creator"`
+	Modifier         *uint          `json:"modifier"`
+	CreateDatetime   time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime   time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (AlipayComplain) TableName() string {
+	return TablePrefix + "alipay_complain"
 }
 
 // ===== TenantCookie 租户Cookie =====
