@@ -224,6 +224,11 @@ func (h *NotifyHandler) successOrder(orderNo string, payTimeStr string, pluginTy
 		}
 	}
 
+	// 触发成功 hooks（手续费扣减、统计更新等）
+	// 预加载 Merchant.Parent 以便 tenantIDFromOrder 获取租户ID
+	h.DB.Preload("Merchant").Preload("Merchant.Parent").Where("id = ?", order.ID).First(&order)
+	service.GetHookRegistry().TriggerSuccess(h.DB, &order, &detail)
+
 	// 触发商户通知
 	h.triggerMerchantNotify(orderNo)
 }
@@ -355,6 +360,10 @@ func SuccessOrderByQuery(db *gorm.DB, orderNo string) {
 			}
 		}
 	}
+
+	// 触发成功 hooks（手续费扣减、统计更新等）
+	db.Preload("Merchant").Preload("Merchant.Parent").Where("id = ?", order.ID).First(&order)
+	service.GetHookRegistry().TriggerSuccess(db, &order, &detail)
 
 	// 触发商户通知
 	triggerMerchantNotifyStatic(db, orderNo)
