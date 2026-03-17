@@ -609,6 +609,14 @@ func main() {
 			jobs.POST("/delete_order/", jobsHandler.DeleteOrder)
 			jobs.POST("/delete_log/", jobsHandler.DeleteLog)
 			jobs.POST("/auto_transfer/", jobsHandler.AutoTransfer)
+			jobs.POST("/report/tenant/pre/", jobsHandler.ReportTenantPre)
+			jobs.POST("/report/split/pre/", jobsHandler.ReportSplitPre)
+			jobs.POST("/report/merchant/pre/", jobsHandler.ReportMerchantPre)
+			jobs.POST("/report/writeoff/pre/", jobsHandler.ReportWriteoffPre)
+			jobs.POST("/report/tenant/pre/one/", jobsHandler.ReportTenantPreOne)
+			jobs.POST("/report/split/pre/one/", jobsHandler.ReportSplitPreOne)
+			jobs.POST("/report/merchant/pre/one/", jobsHandler.ReportMerchantPreOne)
+			jobs.POST("/check/user/login/", jobsHandler.CheckUserLogin)
 		}
 
 		// ===== 插件配置管理 =====

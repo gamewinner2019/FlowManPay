@@ -29,6 +29,27 @@ func (Role) TableName() string {
 	return TablePrefix + "system_role"
 }
 
+// RoleNoJoin 与 Role 相同但不含 many2many 关联，用于 AutoMigrate 避免关联表主键冲突
+type RoleNoJoin struct {
+	ID             uint           `gorm:"primaryKey" json:"id"`
+	Name           string         `gorm:"size:64;uniqueIndex" json:"name"`
+	Key            string         `gorm:"size:64;uniqueIndex" json:"key"`
+	Sort           int            `gorm:"default:1" json:"sort"`
+	Status         bool           `gorm:"default:true" json:"status"`
+	Admin          bool           `gorm:"default:false" json:"admin"`
+	DataRange      int            `gorm:"default:0" json:"data_range"`
+	Remark         string         `gorm:"size:255" json:"remark"`
+	Creator        *uint          `json:"creator"`
+	Modifier       *uint          `json:"modifier"`
+	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (RoleNoJoin) TableName() string {
+	return TablePrefix + "system_role"
+}
+
 // Users maps to dvadmin_system_users
 type Users struct {
 	ID             uint           `gorm:"primaryKey" json:"id"`

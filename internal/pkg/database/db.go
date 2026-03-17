@@ -60,9 +60,12 @@ func Get() *gorm.DB {
 
 // autoMigrate runs auto migration for all models.
 func autoMigrate() {
+	// 先检查已有的关联表，手动创建不存在的关联表（跳过已存在的）
+	migrateJoinTables()
+
 	err := db.AutoMigrate(
-		// 系统模型
-		&model.Role{},
+		// 系统模型（Role 不放在这里迁移，单独处理以避免关联表冲突）
+		&model.RoleNoJoin{},
 		&model.Users{},
 		&model.Menu{},
 		&model.MenuButton{},
@@ -159,4 +162,26 @@ func autoMigrate() {
 		log.Fatalf("数据库迁移失败: %v", err)
 	}
 	log.Println("数据库迁移完成")
+}
+
+// migrateJoinTables 仅在关联表不存在时创建，已存在则跳过
+func migrateJoinTables() {
+	// dvadmin_system_role_permission
+	if !db.Migrator().HasTable("dvadmin_system_role_permission") {
+		_ = db.Exec(`CREATE TABLE dvadmin_system_role_permission (
+			role_id bigint unsigned NOT NULL,
+			menu_button_id bigint unsigned NOT NULL,
+			PRIMARY KEY (role_id, menu_button_id)
+		)`).Error
+		log.Println("创建关联表 dvadmin_system_role_permission")
+	}
+	// dvadmin_system_role_menu
+	if !db.Migrator().HasTable("dvadmin_system_role_menu") {
+		_ = db.Exec(`CREATE TABLE dvadmin_system_role_menu (
+			role_id bigint unsigned NOT NULL,
+			menu_id bigint unsigned NOT NULL,
+			PRIMARY KEY (role_id, menu_id)
+		)`).Error
+		log.Println("创建关联表 dvadmin_system_role_menu")
+	}
 }
