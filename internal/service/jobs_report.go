@@ -315,7 +315,7 @@ func (s *JobsService) ReportMerchantPreJob(today time.Time, merchantID *uint) {
 			"COALESCE(SUM(pds.real_money), 0) as real_money, "+
 			"COALESCE(SUM(pds.success_count), 0) as success_count, "+
 			"COALESCE(SUM(pds.submit_count), 0) as submit_count, "+
-			"COALESCE(mpc.tax, 0) as fee").
+			"COALESCE(MAX(mpc.tax), 0) as fee").
 		Joins("JOIN "+model.Merchant{}.TableName()+" AS m ON m.id = pds.merchant_id").
 		Joins("LEFT JOIN "+model.MerchantPayChannel{}.TableName()+" AS mpc ON mpc.merchant_id = pds.merchant_id AND mpc.pay_channel_id = pds.pay_channel_id").
 		Where("m.telegram IS NOT NULL AND m.telegram != '' AND pds.date = ?", today.Format("2006-01-02")).
@@ -572,10 +572,9 @@ func (s *JobsService) CheckUserLogin() (int, error) {
 	s.DB.Preload("Role").Where("is_active = ? AND status = ?", true, true).Find(&users)
 
 	type expireInfo struct {
-		UserID uint
-		RoleID string // role key: merchant/tenant/writeoff
+		UserID   uint
+		RoleID   string // role key: merchant/tenant/writeoff
 		EntityID uint
-		Msg    string
 	}
 
 	var expireList []expireInfo
