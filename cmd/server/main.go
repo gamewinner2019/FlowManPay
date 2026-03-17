@@ -72,6 +72,9 @@ func main() {
 	// 初始化收银台 Handler
 	cashierHandler := handler.NewCashierHandler(db, rdb, "templates")
 
+	// 初始化订单API Handler（收银台启动/检查/商户查询/微信回调）
+	orderAPIHandler := handler.NewOrderAPIHandler(db, rdb)
+
 	// 注册内置 Hook
 	service.RegisterBuiltinHooks(db)
 
@@ -108,6 +111,15 @@ func main() {
 		// 支付回调通知接口（公开，由第三方支付平台回调）
 		api.POST("/pay/order/notify/:plugin_type/:product_id/", notifyHandler.AlipayNotify)
 		api.GET("/pay/order/notify/test/", notifyHandler.NotifyTest)
+
+		// 收银台订单启动/检查（公开，通过Redis缓存认证）
+		api.GET("/pay/order/start/", orderAPIHandler.StartOrder)
+		api.POST("/pay/order/start/", orderAPIHandler.StartOrder)
+		api.POST("/pay/order/:raw_order_no/check/", orderAPIHandler.CheckOrder)
+
+		// 商户查询接口（公开，通过签名认证）
+		api.GET("/pay/order/query_order/", orderAPIHandler.QueryOrder)
+		api.POST("/pay/order/query_order/", orderAPIHandler.QueryOrder)
 
 		// Telegram Bot 回调（公开，由外部 Telegram Bot 调用）
 		api.POST("/business/tenant_yufu/bot/telegram/", businessHandler.TenantYufuBotTelegram)
