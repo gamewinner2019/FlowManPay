@@ -1792,8 +1792,8 @@ func (h *BusinessHandler) PhoneOrderProduct(c *gin.Context) {
 
 	for i, money := range moneys {
 		var quickCount, slowCount int64
-		query.Where("charge_type = 0 AND money = ?", money).Count(&quickCount)
-		query.Where("charge_type = 1 AND money = ?", money).Count(&slowCount)
+		query.Session(&gorm.Session{}).Where("charge_type = 0 AND money = ?", money).Count(&quickCount)
+		query.Session(&gorm.Session{}).Where("charge_type = 1 AND money = ?", money).Count(&slowCount)
 		data[labels[i]] = gin.H{
 			"quick": quickCount,
 			"slow":  slowCount,
@@ -1843,10 +1843,10 @@ func (h *BusinessHandler) PhoneOrderStatistics(c *gin.Context) {
 
 	for i, money := range moneys {
 		var waitingCount, refundCount, successCount, normalCount int64
-		query.Where("order_status = 2 AND money = ?", money).Count(&waitingCount)
-		query.Where("order_status = 3 AND money = ?", money).Count(&refundCount)
-		query.Where("order_status IN ? AND money = ?", []int{4, 5}, money).Count(&successCount)
-		query.Where("order_status NOT IN ? AND money = ?", []int{2, 3, 4, 5}, money).Count(&normalCount)
+		query.Session(&gorm.Session{}).Where("order_status = 2 AND money = ?", money).Count(&waitingCount)
+		query.Session(&gorm.Session{}).Where("order_status = 3 AND money = ?", money).Count(&refundCount)
+		query.Session(&gorm.Session{}).Where("order_status IN ? AND money = ?", []int{4, 5}, money).Count(&successCount)
+		query.Session(&gorm.Session{}).Where("order_status NOT IN ? AND money = ?", []int{2, 3, 4, 5}, money).Count(&normalCount)
 		data[labels[i]] = gin.H{
 			"waiting": waitingCount,
 			"refund":  refundCount,

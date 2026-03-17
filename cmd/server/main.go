@@ -96,6 +96,9 @@ func main() {
 		// 支付回调通知接口（公开，由第三方支付平台回调）
 		api.POST("/pay/order/notify/:plugin_type/:product_id/", notifyHandler.AlipayNotify)
 		api.GET("/pay/order/notify/test/", notifyHandler.NotifyTest)
+
+		// Telegram Bot 回调（公开，由外部 Telegram Bot 调用）
+		api.POST("/business/tenant_yufu/bot/telegram/", businessHandler.TenantYufuBotTelegram)
 	}
 
 	// ===== 需要认证的接口 =====
@@ -471,8 +474,8 @@ func main() {
 			orderDevice := business.Group("/order_device")
 			{
 				orderDevice.GET("/", businessHandler.OrderDeviceList)
-				orderDevice.POST("/ban_ip/", businessHandler.OrderDeviceBanIP)
-				orderDevice.POST("/ban_userid/", businessHandler.OrderDeviceBanUserID)
+					orderDevice.POST("/ban_ip/:id/", businessHandler.OrderDeviceBanIP)
+				orderDevice.POST("/ban_userid/:id/", businessHandler.OrderDeviceBanUserID)
 				orderDevice.GET("/statistics/", businessHandler.OrderDeviceStatistics)
 			}
 
@@ -484,8 +487,8 @@ func main() {
 			{
 				tenantYufu.GET("/", businessHandler.TenantYufuUserList)
 				tenantYufu.POST("/", businessHandler.TenantYufuUserCreate)
-				tenantYufu.DELETE("/:id/", businessHandler.TenantYufuUserDelete)
-				tenantYufu.POST("/bot/telegram/", businessHandler.TenantYufuBotTelegram)
+					tenantYufu.DELETE("/:id/", businessHandler.TenantYufuUserDelete)
+					// Note: /bot/telegram/ is registered as public route (no JWT) since it's called by external Telegram bots
 			}
 
 			// 归集用户日统计

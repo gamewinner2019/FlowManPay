@@ -247,6 +247,7 @@ func parseYuanToCents(yuan string) (int, error) {
 		return 0, fmt.Errorf("空金额")
 	}
 	parts := strings.SplitN(yuan, ".", 2)
+	negative := strings.HasPrefix(parts[0], "-")
 	intPart, err := strconv.Atoi(parts[0])
 	if err != nil {
 		return 0, err
@@ -264,7 +265,7 @@ func parseYuanToCents(yuan string) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		if intPart < 0 {
+		if negative {
 			cents -= dec
 		} else {
 			cents += dec
