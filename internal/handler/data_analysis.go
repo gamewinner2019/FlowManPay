@@ -451,6 +451,13 @@ func (h *DataAnalysisHandler) dayStatisticsWriteoff(c *gin.Context, user *model.
 // DayStatisticsExport 日统计导出CSV
 // GET /api/statistics/day/export/
 func (h *DataAnalysisHandler) DayStatisticsExport(c *gin.Context) {
+	// 仅管理员/运维可导出全局统计，防止其他角色获取系统级财务数据
+	user, _ := middleware.GetCurrentUser(c)
+	if user == nil || (user.Role.Key != model.RoleKeyAdmin && user.Role.Key != model.RoleKeyOperation) {
+		response.ErrorResponse(c, "无权导出")
+		return
+	}
+
 	startDate := c.Query("start_date")
 	endDate := c.Query("end_date")
 

@@ -340,6 +340,11 @@ func (h *OrderHandler) Retrieve(c *gin.Context) {
 		return
 	}
 
+	// 检查当前用户是否有权查看该订单
+	if !h.checkOrderOwnership(c, &order) {
+		return
+	}
+
 	var detail model.OrderDetail
 	h.DB.Preload("Plugin").Preload("Writeoff").Preload("Writeoff.SystemUser").Preload("Domain").
 		Where("order_id = ?", order.ID).First(&detail)
@@ -561,6 +566,11 @@ func (h *OrderHandler) QueryLogs(c *gin.Context) {
 	var order model.Order
 	if err := h.DB.Where("id = ? OR order_no = ?", id, id).First(&order).Error; err != nil {
 		response.ErrorResponse(c, "订单不存在")
+		return
+	}
+
+	// 检查当前用户是否有权查看该订单日志
+	if !h.checkOrderOwnership(c, &order) {
 		return
 	}
 
