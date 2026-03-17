@@ -35,25 +35,27 @@ func (dt *DateTime) UnmarshalJSON(data []byte) error {
 		dt.Time = time.Time{}
 		return nil
 	}
-	// 尝试多种格式解析
+	// 带时区信息的格式，直接解析
 	for _, layout := range []string{
-		datetimeFormat,
 		time.RFC3339,
 		"2006-01-02T15:04:05Z07:00",
-		"2006-01-02",
 	} {
 		if t, err := time.Parse(layout, s); err == nil {
 			dt.Time = t
 			return nil
 		}
 	}
-	// 尝试本地时区解析
-	t, err := time.ParseInLocation(datetimeFormat, s, time.Local)
-	if err != nil {
-		return fmt.Errorf("无法解析时间: %s", s)
+	// 不带时区的格式，按本地时区解析（与Scan一致）
+	for _, layout := range []string{
+		datetimeFormat,
+		"2006-01-02",
+	} {
+		if t, err := time.ParseInLocation(layout, s, time.Local); err == nil {
+			dt.Time = t
+			return nil
+		}
 	}
-	dt.Time = t
-	return nil
+	return fmt.Errorf("无法解析时间: %s", s)
 }
 
 // Value 实现 driver.Valuer 接口（写入数据库）
