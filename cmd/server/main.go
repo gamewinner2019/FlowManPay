@@ -122,9 +122,12 @@ func main() {
 	}
 
 	// ===== 收银台模板路由（公开，无需认证） =====
+	// 注意: Gin的radix树路由不允许同一层级同时存在参数节点和静态节点
+	// 因此将 loading/yunshu/merchant 放在带静态前缀的独立路由中，
+	// 避免与 /:order_no/:money/... 冲突
 	view := r.Group("/view")
 	{
-		// 标准收银台
+		// 标准收银台（第二段均为参数 :money）
 		view.GET("/:order_no/:money/alipay/", cashierHandler.AlipayNew)
 		view.GET("/:order_no/:money/alipay/copy/", cashierHandler.AlipayCopy)
 		view.GET("/:order_no/:money/alipay/ts/", cashierHandler.AlipayTs)
@@ -133,13 +136,16 @@ func main() {
 		view.GET("/:order_no/:money/alipay/qr/", cashierHandler.AlipayQr)
 		view.GET("/:order_no/:money/alipay/wqr/", cashierHandler.AlipayWithQr)
 
-		// 运输支付
+		// Loading 页面（使用静态前缀 /loading/ 避免与 :money 冲突）
+		view.GET("/loading/:order_no/", cashierHandler.Loading)
+
+		// 运输支付（yunshu 是静态前缀，不冲突）
 		view.GET("/yunshu/:order_no/:trade_no/alipay/", cashierHandler.YunshuPay)
 
-		// Loading 页面
-		view.GET("/:order_no/loading/", cashierHandler.Loading)
+		// 商户收款页面（使用静态前缀 /merchant/ 避免与 :order_no 冲突）
+		view.GET("/merchant/:merchant_id/pay/", cashierHandler.MerchantPay)
 
-		// Other 系列收银台
+		// Other 系列收银台（other 是静态前缀，不冲突）
 		view.GET("/other/:order_no/:money/alipay/", cashierHandler.OtherAlipay)
 		view.GET("/other/:order_no/:money/alipay/auto/", cashierHandler.OtherAlipayAuto)
 		view.GET("/other/:order_no/:money/alipay/gold/", cashierHandler.OtherAlipayGold)
@@ -152,9 +158,6 @@ func main() {
 		view.GET("/other/:order_no/:money/paypal/", cashierHandler.OtherPaypal)
 		view.GET("/other/:order_no/:money/taobao/", cashierHandler.OtherTaobao)
 		view.GET("/other/:order_no/:money/unpay/", cashierHandler.OtherUnpay)
-
-		// 商户收款页面
-		view.GET("/:merchant_id/MerchantPay/", cashierHandler.MerchantPay)
 	}
 
 	// ===== 需要认证的接口 =====

@@ -331,6 +331,17 @@ func (h *CashierHandler) TemplatesNew(c *gin.Context, templateName string, extra
 				if remark, ok := extra["remark"].(string); ok {
 					data.Remark = remark
 				}
+				if name, ok := extra["name"].(string); ok {
+					data.Name = name
+					if len(name) > 0 {
+						data.FirstName = string([]rune(name)[:1])
+					}
+				}
+				if tm, ok := extra["tm"].(float64); ok {
+					data.Tm = int64(tm)
+				} else {
+					data.Tm = time.Now().UnixMilli() + 600000
+				}
 			}
 		}
 	}
@@ -374,43 +385,8 @@ func (h *CashierHandler) AlipayHgNew(c *gin.Context) {
 // GET /view/:order_no/:money/alipay/uid/
 func (h *CashierHandler) AlipayUID(c *gin.Context) {
 	orderNo := c.Param("order_no")
-	moneyStr := c.Param("money")
-
-	money, _ := strconv.Atoi(moneyStr)
-	moneyFloat := float64(money) / 100.0
-
-	ctx := c.Request.Context()
 	extraSDK := fmt.Sprintf("%s_card_uid_sdk", orderNo)
-	sdkStr := h.RDB.Get(ctx, extraSDK).Val()
-
-	data := templateData{
-		OrderNo: orderNo,
-		Money:   fmt.Sprintf("%.2f", moneyFloat),
-		Tm:      time.Now().UnixMilli() + 600000, // 10分钟倒计时(毫秒)
-	}
-
-	if sdkStr != "" {
-		var sdkData map[string]interface{}
-		if err := json.Unmarshal([]byte(sdkStr), &sdkData); err == nil {
-			if name, ok := sdkData["name"].(string); ok {
-				data.Name = name
-				if len(name) > 0 {
-					data.FirstName = string([]rune(name)[:1])
-				}
-			}
-			if uid, ok := sdkData["uid"].(string); ok {
-				data.UID = uid
-			}
-			if remark, ok := sdkData["remark"].(string); ok {
-				data.Remark = remark
-			}
-			if tm, ok := sdkData["tm"].(float64); ok {
-				data.Tm = int64(tm)
-			}
-		}
-	}
-
-	h.renderTemplate(c, "alipay_uid.html", data)
+	h.TemplatesNew(c, "alipay_uid.html", extraSDK)
 }
 
 // AlipayQr 支付宝二维码收银台
