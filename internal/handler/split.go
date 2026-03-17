@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"github.com/gamewinner2019/FlowManPay/internal/middleware"
 	"github.com/gamewinner2019/FlowManPay/internal/model"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/response"
 )
@@ -26,8 +27,7 @@ func NewSplitHandler(db *gorm.DB) *SplitHandler {
 // GroupList 分账用户组列表
 // GET /api/split/groups/
 func (h *SplitHandler) GroupList(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
@@ -69,8 +69,7 @@ func (h *SplitHandler) GroupList(c *gin.Context) {
 // GroupCreate 创建分账用户组
 // POST /api/split/groups/
 func (h *SplitHandler) GroupCreate(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 
 	var req struct {
 		Name        string  `json:"name" binding:"required"`
@@ -135,8 +134,7 @@ func (h *SplitHandler) GroupRetrieve(c *gin.Context) {
 // GroupUpdate 更新分账用户组
 // PUT /api/split/groups/:id/
 func (h *SplitHandler) GroupUpdate(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 	id, _ := strconv.Atoi(c.Param("id"))
 
 	var group model.AlipaySplitUserGroup
@@ -207,8 +205,7 @@ func (h *SplitHandler) GroupDelete(c *gin.Context) {
 // GroupPrePay 分账组预付操作
 // POST /api/split/groups/:id/pre_pay/
 func (h *SplitHandler) GroupPrePay(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 	id, _ := strconv.Atoi(c.Param("id"))
 
 	var req struct {
@@ -362,8 +359,7 @@ func (h *SplitHandler) UserList(c *gin.Context) {
 // UserCreate 创建分账用户
 // POST /api/split/users/
 func (h *SplitHandler) UserCreate(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 
 	var req struct {
 		UsernameType int     `json:"username_type"`
@@ -405,8 +401,7 @@ func (h *SplitHandler) UserCreate(c *gin.Context) {
 // UserUpdate 更新分账用户
 // PUT /api/split/users/:id/
 func (h *SplitHandler) UserUpdate(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 	id, _ := strconv.Atoi(c.Param("id"))
 
 	var splitUser model.AlipaySplitUser
@@ -512,8 +507,7 @@ func (h *SplitHandler) UserFlowList(c *gin.Context) {
 // CollectionUserList 归集用户列表
 // GET /api/collection/users/
 func (h *SplitHandler) CollectionUserList(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))

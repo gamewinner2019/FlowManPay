@@ -128,13 +128,17 @@ func (h *NotifyHandler) AlipayNotify(c *gin.Context) {
 		if responder.CheckNotifySuccess(dataMap) {
 			// 通知成功，触发订单完成流程
 			go h.successOrder(orderNo, payTime, pluginType)
+			c.String(http.StatusOK, "success")
+		} else {
+			// 通知状态非成功（如WAIT_BUYER_PAY），返回fail让支付宝重试
+			log.Printf("[接收通知] %s 通知状态非成功, 订单号: %s", pluginType, orderNo)
+			c.String(http.StatusOK, "fail")
 		}
 	} else {
 		// 没有对应插件，默认走成功流程
 		go h.successOrder(orderNo, payTime, pluginType)
+		c.String(http.StatusOK, "success")
 	}
-
-	c.String(http.StatusOK, "success")
 }
 
 // successOrder 订单完成流程

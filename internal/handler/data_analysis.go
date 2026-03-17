@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 
+	"github.com/gamewinner2019/FlowManPay/internal/middleware"
 	"github.com/gamewinner2019/FlowManPay/internal/model"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/response"
 )
@@ -26,8 +27,7 @@ func NewDataAnalysisHandler(db *gorm.DB) *DataAnalysisHandler {
 // Dashboard 仪表盘统计
 // GET /api/statistics/dashboard/
 func (h *DataAnalysisHandler) Dashboard(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 
 	now := time.Now()
 	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
@@ -302,8 +302,7 @@ func (h *DataAnalysisHandler) getOrderTrend(tenantID *uint, merchantID *uint, wr
 // DayStatisticsList 日统计列表
 // GET /api/statistics/day/
 func (h *DataAnalysisHandler) DayStatisticsList(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
@@ -493,8 +492,7 @@ func (h *DataAnalysisHandler) DayStatisticsExport(c *gin.Context) {
 // PayChannelStatsList 支付通道统计列表
 // GET /api/statistics/channel/
 func (h *DataAnalysisHandler) PayChannelStatsList(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
@@ -556,8 +554,7 @@ func (h *DataAnalysisHandler) PayChannelStatsList(c *gin.Context) {
 // SplitGroupStatsList 分账组统计列表
 // GET /api/statistics/split_group/
 func (h *DataAnalysisHandler) SplitGroupStatsList(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
@@ -629,8 +626,7 @@ func (h *DataAnalysisHandler) SplitGroupStatsList(c *gin.Context) {
 // CollectionStatsList 归集统计列表
 // GET /api/statistics/collection/
 func (h *DataAnalysisHandler) CollectionStatsList(c *gin.Context) {
-	currentUser, _ := c.Get("currentUser")
-	user := currentUser.(*model.Users)
+	user, _ := middleware.GetCurrentUser(c)
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))

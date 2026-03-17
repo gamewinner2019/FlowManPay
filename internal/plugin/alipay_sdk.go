@@ -386,30 +386,29 @@ func (s *AlipaySDK) VerifyNotify(params map[string]string) bool {
 		return false
 	}
 
-	// 去除sign和sign_type
-	delete(params, "sign")
-	delete(params, "sign_type")
+	// 复制map，避免修改调用方的原始数据
+	filtered := make(map[string]string, len(params))
+	for k, v := range params {
+		if k != "sign" && k != "sign_type" {
+			filtered[k] = v
+		}
+	}
 
 	// 排序
-	keys := make([]string, 0, len(params))
-	for k := range params {
+	keys := make([]string, 0, len(filtered))
+	for k := range filtered {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 
 	var pairs []string
 	for _, k := range keys {
-		if params[k] != "" {
-			pairs = append(pairs, fmt.Sprintf("%s=%s", k, params[k]))
+		if filtered[k] != "" {
+			pairs = append(pairs, fmt.Sprintf("%s=%s", k, filtered[k]))
 		}
 	}
 	signStr := strings.Join(pairs, "&")
-
-	// 还原sign和sign_type
-	params["sign"] = sign
-	if signType != "" {
-		params["sign_type"] = signType
-	}
+	_ = signType // signType已在过滤时排除，无需还原
 
 	// 解码签名
 	signBytes, err := base64.StdEncoding.DecodeString(sign)
