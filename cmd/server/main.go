@@ -57,6 +57,9 @@ func main() {
 	dataAnalysisHandler := handler.NewDataAnalysisHandler(db)
 	splitHandler := handler.NewSplitHandler(db)
 
+	// 初始化原生管理-支付宝 Handler
+	alipayNativeHandler := handler.NewAlipayNativeHandler(db)
+
 	// 注册内置 Hook
 	service.RegisterBuiltinHooks(db)
 
@@ -282,6 +285,20 @@ func main() {
 			statistics.GET("/split_group/", dataAnalysisHandler.SplitGroupStatsList)
 			statistics.GET("/collection/", dataAnalysisHandler.CollectionStatsList)
 			statistics.GET("/order_success_rate/", dataAnalysisHandler.OrderSuccessRate)
+
+			// 首页统计接口
+			success := statistics.Group("/success")
+			{
+				success.GET("/today/", dataAnalysisHandler.SuccessToday)
+				success.GET("/yesterday/", dataAnalysisHandler.SuccessYesterday)
+				success.GET("/total/", dataAnalysisHandler.SuccessTotal)
+			}
+			statistics.GET("/device/", dataAnalysisHandler.DeviceType)
+			statistics.GET("/tenant/balance/", dataAnalysisHandler.TenantBalance)
+			statistics.GET("/profit/", dataAnalysisHandler.Profit)
+			statistics.GET("/month/half/", dataAnalysisHandler.MonthHalf)
+			statistics.GET("/members/", dataAnalysisHandler.Members)
+			statistics.GET("/enum/", dataAnalysisHandler.Enum)
 		}
 
 		// ===== 分账管理 =====
@@ -324,6 +341,96 @@ func main() {
 				collUsers.PUT("/:id/", splitHandler.CollectionUserUpdate)
 				collUsers.DELETE("/:id/", splitHandler.CollectionUserDelete)
 				collUsers.GET("/:id/flow/", splitHandler.CollectionFlowList)
+			}
+		}
+
+		// ===== 原生管理-支付宝 =====
+		alipay := auth.Group("/alipay")
+		{
+			// 支付宝产品管理
+			product := alipay.Group("/product")
+			{
+				product.GET("/", alipayNativeHandler.ProductList)
+				product.POST("/", alipayNativeHandler.ProductCreate)
+				product.GET("/simple/", alipayNativeHandler.ProductSimple)
+				product.POST("/batch/", alipayNativeHandler.ProductBatch)
+				product.GET("/tags/", alipayNativeHandler.ProductTags)
+				product.POST("/tags/", alipayNativeHandler.ProductTagsAdd)
+				product.DELETE("/tags/:name/", alipayNativeHandler.ProductTagsDelete)
+				product.GET("/:id/", alipayNativeHandler.ProductRetrieve)
+				product.PUT("/:id/", alipayNativeHandler.ProductUpdate)
+				product.DELETE("/:id/", alipayNativeHandler.ProductDelete)
+				product.GET("/:id/statistics/day/", alipayNativeHandler.ProductStatisticsDay)
+				product.GET("/:id/statistics/channel/", alipayNativeHandler.ProductStatisticsChannel)
+				product.GET("/:id/weight/", alipayNativeHandler.ProductWeightList)
+				product.POST("/:id/weight/", alipayNativeHandler.ProductWeightSet)
+				product.GET("/:id/pay_channel/", alipayNativeHandler.ProductPayChannelList)
+				product.GET("/:id/transfer_user/", alipayNativeHandler.TransferUserList)
+				product.POST("/:id/transfer_user/", alipayNativeHandler.TransferUserCreate)
+				product.PUT("/:id/transfer_user/:uid/", alipayNativeHandler.TransferUserUpdate)
+				product.DELETE("/:id/transfer_user/:uid/", alipayNativeHandler.TransferUserDelete)
+			}
+
+			// 转账历史
+			transfer := alipay.Group("/transfer")
+			{
+				transfer.GET("/history/", alipayNativeHandler.TransferHistoryList)
+				transfer.GET("/history/statistics/", alipayNativeHandler.TransferHistoryStatistics)
+			}
+
+			// 公池管理
+			publicPool := alipay.Group("/public_pool")
+			{
+				publicPool.GET("/", alipayNativeHandler.PublicPoolList)
+				publicPool.PUT("/:id/", alipayNativeHandler.PublicPoolUpdate)
+				publicPool.DELETE("/:id/", alipayNativeHandler.PublicPoolDelete)
+				publicPool.GET("/statistics/", alipayNativeHandler.PublicPoolStatistics)
+			}
+
+			// 投诉管理
+			complain := alipay.Group("/complain")
+			{
+				complain.GET("/", alipayNativeHandler.ComplainList)
+				complain.PUT("/:id/", alipayNativeHandler.ComplainUpdate)
+			}
+
+			// 分账历史（原生）
+			splitNative := alipay.Group("/split")
+			{
+				splitNative.GET("/history/", alipayNativeHandler.SplitNativeHistoryList)
+				splitNative.GET("/history/statistics/", alipayNativeHandler.SplitNativeHistoryStatistics)
+
+				// 分账用户组
+				splitGroup := splitNative.Group("/group")
+				{
+					splitGroup.GET("/", alipayNativeHandler.NativeSplitGroupList)
+					splitGroup.POST("/", alipayNativeHandler.NativeSplitGroupCreate)
+					splitGroup.GET("/statistics/", alipayNativeHandler.NativeSplitGroupStatistics)
+					splitGroup.GET("/:id/", alipayNativeHandler.NativeSplitGroupRetrieve)
+					splitGroup.PUT("/:id/", alipayNativeHandler.NativeSplitGroupUpdate)
+					splitGroup.DELETE("/:id/", alipayNativeHandler.NativeSplitGroupDelete)
+					splitGroup.POST("/:id/bind/add/", alipayNativeHandler.NativeSplitGroupBindAdd)
+					splitGroup.POST("/:id/bind/remove/", alipayNativeHandler.NativeSplitGroupBindRemove)
+				}
+
+				// 分账用户
+				splitUser := splitNative.Group("/user")
+				{
+					splitUser.GET("/", alipayNativeHandler.NativeSplitUserList)
+					splitUser.POST("/", alipayNativeHandler.NativeSplitUserCreate)
+					splitUser.PUT("/:id/", alipayNativeHandler.NativeSplitUserUpdate)
+					splitUser.DELETE("/:id/", alipayNativeHandler.NativeSplitUserDelete)
+				}
+			}
+
+			// 神码管理
+			shenma := alipay.Group("/shenma")
+			{
+				shenma.GET("/", alipayNativeHandler.ShenmaList)
+				shenma.POST("/", alipayNativeHandler.ShenmaCreate)
+				shenma.PUT("/:id/", alipayNativeHandler.ShenmaUpdate)
+				shenma.DELETE("/:id/", alipayNativeHandler.ShenmaDelete)
+				shenma.GET("/:id/pay_channel/", alipayNativeHandler.ShenmaPayChannel)
 			}
 		}
 	}
