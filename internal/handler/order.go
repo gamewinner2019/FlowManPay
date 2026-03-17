@@ -510,8 +510,17 @@ func (h *OrderHandler) Close(c *gin.Context) {
 		return
 	}
 
-	if err := h.DB.Model(&order).Update("order_status", model.OrderStatusClosed).Error; err != nil {
+	// 原子更新订单状态（防止并发关闭覆盖已支付状态）
+	result := h.DB.Model(&model.Order{}).
+		Where("id = ? AND order_status IN ?", order.ID,
+			[]model.OrderStatus{model.OrderStatusWaitPay, model.OrderStatusInProduction}).
+		Update("order_status", model.OrderStatusClosed)
+	if result.Error != nil {
 		response.ErrorResponse(c, "关闭失败")
+		return
+	}
+	if result.RowsAffected == 0 {
+		response.ErrorResponse(c, "订单状态已变更，无法关闭")
 		return
 	}
 

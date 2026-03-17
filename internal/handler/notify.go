@@ -209,6 +209,12 @@ func (h *NotifyHandler) successOrder(orderNo string, payTimeStr string, pluginTy
 		if detail.PluginID != nil {
 			args.PluginID = int(*detail.PluginID)
 		}
+		if detail.ProductID != "" {
+			args.ProductID, _ = strconv.Atoi(detail.ProductID)
+		}
+		if order.PayChannelID != nil {
+			args.ChannelID = int(*order.PayChannelID)
+		}
 		if err := responder.CallbackSuccess(h.DB, args); err != nil {
 			log.Printf("[通知成功] 插件回调失败: %v", err)
 		}
@@ -333,6 +339,12 @@ func SuccessOrderByQuery(db *gorm.DB, orderNo string) {
 			}
 			if detail.PluginID != nil {
 				args.PluginID = int(*detail.PluginID)
+			}
+			if detail.ProductID != "" {
+				args.ProductID, _ = strconv.Atoi(detail.ProductID)
+			}
+			if order.PayChannelID != nil {
+				args.ChannelID = int(*order.PayChannelID)
 			}
 			if err := responder.CallbackSuccess(db, args); err != nil {
 				log.Printf("[查询完成] 插件回调失败: %v", err)
