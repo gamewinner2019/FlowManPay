@@ -114,15 +114,7 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 		return
 	}
 
-	// 4. 检查商户订单号
-	if err := h.OrderService.CheckOutOrderNo(ctx); err != nil {
-		if ope, ok := err.(*service.OrderProcessingError); ok {
-			response.ErrorResponseWithCode(c, ope.Code, ope.Msg)
-			return
-		}
-		response.ErrorResponse(c, err.Error())
-		return
-	}
+	// 4. 检查商户订单号（移至事务内，防止 TOCTOU 竞态）
 
 	// 5. 检查通道
 	if err := h.OrderService.CheckChannel(ctx, req.ChannelID); err != nil {
@@ -156,6 +148,10 @@ func (h *OrderHandler) CreateOrder(c *gin.Context) {
 
 	// 8. 创建订单 + 订单详情（事务保证原子性）
 	err := h.DB.Transaction(func(tx *gorm.DB) error {
+		// 检查商户订单号（在事务内执行，防止 TOCTOU 竞态）
+		if err := h.OrderService.CheckOutOrderNo(ctx, tx); err != nil {
+			return err
+		}
 		if err := h.OrderService.TryCreateOrder(ctx, nil, tx); err != nil {
 			return err
 		}

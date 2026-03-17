@@ -2,6 +2,8 @@ package handler
 
 import (
 	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -953,8 +955,13 @@ func (h *BusinessHandler) TenantYufuUserCreate(c *gin.Context) {
 		return
 	}
 
-	// 生成绑定码
-	code := fmt.Sprintf("TG%X", time.Now().UnixNano())
+	// 生成绑定码（使用密码学安全随机数）
+	randomBytes := make([]byte, 16)
+	if _, err := rand.Read(randomBytes); err != nil {
+		response.ErrorResponse(c, "生成绑定码失败")
+		return
+	}
+	code := "TG" + hex.EncodeToString(randomBytes)
 	ctx := c.Request.Context()
 	h.RDB.Set(ctx, code, tenant.ID, 5*time.Minute)
 

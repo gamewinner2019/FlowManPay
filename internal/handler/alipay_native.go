@@ -14,6 +14,21 @@ import (
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/response"
 )
 
+// filterAllowedFields 从 updates map 中只保留允许更新的字段（防止批量赋值攻击）
+func filterAllowedFields(updates map[string]interface{}, allowed []string) map[string]interface{} {
+	allowedSet := make(map[string]struct{}, len(allowed))
+	for _, f := range allowed {
+		allowedSet[f] = struct{}{}
+	}
+	filtered := make(map[string]interface{}, len(allowed))
+	for k, v := range updates {
+		if _, ok := allowedSet[k]; ok {
+			filtered[k] = v
+		}
+	}
+	return filtered
+}
+
 // AlipayNativeHandler 支付宝原生管理 Handler
 type AlipayNativeHandler struct {
 	DB *gorm.DB
@@ -190,16 +205,19 @@ func (h *AlipayNativeHandler) ProductUpdate(c *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
-	if err := c.ShouldBindJSON(&updates); err != nil {
+	var raw map[string]interface{}
+	if err := c.ShouldBindJSON(&raw); err != nil {
 		response.ErrorResponse(c, "参数错误")
 		return
 	}
+	updates := filterAllowedFields(raw, []string{
+		"name", "uid", "app_id", "status", "can_pay", "account_type", "sign_type",
+		"collection_type", "max_fail_count", "limit_money", "max_money", "min_money",
+		"float_min_money", "float_max_money", "day_count_limit", "settled_moneys",
+		"subject", "private_key", "public_key", "app_public_crt", "alipay_public_crt",
+		"alipay_root_crt", "split_async", "proxy", "description", "writeoff_id", "parent_id",
+	})
 	updates["modifier"] = user.ID
-	// 移除不可更新字段
-	delete(updates, "id")
-	delete(updates, "creator")
-	delete(updates, "create_datetime")
 
 	if err := h.DB.Model(&product).Updates(updates).Error; err != nil {
 		response.ErrorResponse(c, "更新失败: "+err.Error())
@@ -561,15 +579,15 @@ func (h *AlipayNativeHandler) TransferUserUpdate(c *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
-	if err := c.ShouldBindJSON(&updates); err != nil {
+	var raw map[string]interface{}
+	if err := c.ShouldBindJSON(&raw); err != nil {
 		response.ErrorResponse(c, "参数错误")
 		return
 	}
+	updates := filterAllowedFields(raw, []string{
+		"username_type", "username", "name", "status", "limit_money", "description",
+	})
 	updates["modifier"] = user.ID
-	delete(updates, "id")
-	delete(updates, "creator")
-	delete(updates, "alipay_product_id")
 
 	h.DB.Model(&tu).Updates(updates)
 	response.DetailResponse(c, tu, "更新成功")
@@ -775,13 +793,12 @@ func (h *AlipayNativeHandler) PublicPoolUpdate(c *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
-	if err := c.ShouldBindJSON(&updates); err != nil {
+	var raw map[string]interface{}
+	if err := c.ShouldBindJSON(&raw); err != nil {
 		response.ErrorResponse(c, "参数错误")
 		return
 	}
-	delete(updates, "id")
-	delete(updates, "alipay_id")
+	updates := filterAllowedFields(raw, []string{"status"})
 
 	h.DB.Model(&pool).Updates(updates)
 	response.DetailResponse(c, pool, "更新成功")
@@ -956,14 +973,13 @@ func (h *AlipayNativeHandler) ComplainUpdate(c *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
-	if err := c.ShouldBindJSON(&updates); err != nil {
+	var raw map[string]interface{}
+	if err := c.ShouldBindJSON(&raw); err != nil {
 		response.ErrorResponse(c, "参数错误")
 		return
 	}
+	updates := filterAllowedFields(raw, []string{"status", "remark"})
 	updates["modifier"] = user.ID
-	delete(updates, "id")
-	delete(updates, "creator")
 
 	h.DB.Model(&complain).Updates(updates)
 	response.DetailResponse(c, complain, "更新成功")
@@ -1286,15 +1302,16 @@ func (h *AlipayNativeHandler) NativeSplitGroupUpdate(c *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
-	if err := c.ShouldBindJSON(&updates); err != nil {
+	var raw map[string]interface{}
+	if err := c.ShouldBindJSON(&raw); err != nil {
 		response.ErrorResponse(c, "参数错误")
 		return
 	}
+	updates := filterAllowedFields(raw, []string{
+		"name", "telegram", "pre_status", "status", "weight", "tax",
+		"writeoff_id", "description",
+	})
 	updates["modifier"] = user.ID
-	delete(updates, "id")
-	delete(updates, "creator")
-	delete(updates, "tenant_id")
 
 	h.DB.Model(&group).Updates(updates)
 	response.DetailResponse(c, group, "更新成功")
@@ -1580,14 +1597,16 @@ func (h *AlipayNativeHandler) NativeSplitUserUpdate(c *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
-	if err := c.ShouldBindJSON(&updates); err != nil {
+	var raw map[string]interface{}
+	if err := c.ShouldBindJSON(&raw); err != nil {
 		response.ErrorResponse(c, "参数错误")
 		return
 	}
+	updates := filterAllowedFields(raw, []string{
+		"username_type", "username", "name", "status", "limit_money",
+		"group_id", "percentage", "risk", "description",
+	})
 	updates["modifier"] = user.ID
-	delete(updates, "id")
-	delete(updates, "creator")
 
 	h.DB.Model(&splitUser).Updates(updates)
 	response.DetailResponse(c, splitUser, "更新成功")
@@ -1679,13 +1698,12 @@ func (h *AlipayNativeHandler) ShenmaUpdate(c *gin.Context) {
 		return
 	}
 
-	var updates map[string]interface{}
-	if err := c.ShouldBindJSON(&updates); err != nil {
+	var raw map[string]interface{}
+	if err := c.ShouldBindJSON(&raw); err != nil {
 		response.ErrorResponse(c, "参数错误")
 		return
 	}
-	delete(updates, "id")
-	delete(updates, "alipay_id")
+	updates := filterAllowedFields(raw, []string{"status", "limit_money", "tenant_id"})
 
 	h.DB.Model(&shenma).Updates(updates)
 	response.DetailResponse(c, shenma, "更新成功")

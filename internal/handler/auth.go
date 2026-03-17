@@ -101,7 +101,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		response.ErrorResponse(c, "请输入验证码")
 		return
 	}
-	if req.CaptchaKey != "" {
+	if captchaRequired && req.CaptchaKey != "" {
 		ctx := context.Background()
 		if req.Captcha == "" {
 			response.ErrorResponse(c, "请输入验证码")

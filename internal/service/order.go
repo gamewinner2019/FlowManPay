@@ -272,12 +272,17 @@ func (s *OrderService) CheckSign(ctx *OrderCreateCtx, reqData map[string]string)
 }
 
 // CheckOutOrderNo 检查商户订单号是否重复
-func (s *OrderService) CheckOutOrderNo(ctx *OrderCreateCtx) error {
+// 当 tx 不为 nil 时使用事务内的数据库连接，避免 TOCTOU 竞态条件
+func (s *OrderService) CheckOutOrderNo(ctx *OrderCreateCtx, tx *gorm.DB) error {
 	if ctx.OutOrderNo == "" {
 		return nil
 	}
+	db := s.DB
+	if tx != nil {
+		db = tx
+	}
 	var count int64
-	s.DB.Model(&model.Order{}).Where("out_order_no = ?", ctx.OutOrderNo).Count(&count)
+	db.Model(&model.Order{}).Where("out_order_no = ?", ctx.OutOrderNo).Count(&count)
 	if count > 0 {
 		return NewOrderProcessingError(7321, "商户订单号重复")
 	}
@@ -568,8 +573,8 @@ func (s *OrderService) ProcessOrderCreation(ctx *OrderCreateCtx, merchantID uint
 		return err
 	}
 
-	// 3. 检查商户订单号
-	if err := s.CheckOutOrderNo(ctx); err != nil {
+	// 3. 检查商户订单号（传 nil 表示不在事务内）
+	if err := s.CheckOutOrderNo(ctx, nil); err != nil {
 		return err
 	}
 
