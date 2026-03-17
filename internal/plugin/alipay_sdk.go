@@ -425,6 +425,35 @@ func (s *AlipaySDK) VerifyNotify(params map[string]string) bool {
 	return rsa.VerifyPKCS1v15(s.PublicKey, hash, hashed, signBytes) == nil
 }
 
+// ===== 直付通二级商户 API =====
+
+// IndirectImageUpload 直付通图片上传
+func (s *AlipaySDK) IndirectImageUpload(imageType, fileName string, content []byte) (map[string]interface{}, error) {
+	bizContent := map[string]interface{}{
+		"image_type":    imageType,
+		"image_content": base64.StdEncoding.EncodeToString(content),
+		"image_name":    fileName,
+	}
+	return s.execute("ant.merchant.expand.indirect.image.upload", bizContent)
+}
+
+// IndirectZftCreate 直付通进件创建
+func (s *AlipaySDK) IndirectZftCreate(reqData map[string]interface{}) (map[string]interface{}, error) {
+	return s.execute("ant.merchant.expand.indirect.zft.create", reqData)
+}
+
+// IndirectZftOrderQuery 直付通进件查询
+func (s *AlipaySDK) IndirectZftOrderQuery(orderID, externalID string) (map[string]interface{}, error) {
+	bizContent := map[string]interface{}{}
+	if orderID != "" {
+		bizContent["order_id"] = orderID
+	}
+	if externalID != "" {
+		bizContent["external_id"] = externalID
+	}
+	return s.execute("ant.merchant.expand.indirect.zftorder.query", bizContent)
+}
+
 // ===== 密钥解析工具 =====
 
 // cutKey 将连续密钥字符串按64字符分行

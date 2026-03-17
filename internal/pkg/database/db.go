@@ -151,6 +151,9 @@ func autoMigrate() {
 		// 快速转账模型
 		&model.AlipayQuickTransfer{},
 		&model.QuickTransferHistory{},
+		// 直付通二级商户模型
+		&model.AlipaySubProduct{},
+		&model.AlipaySubProductRequestHistory{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

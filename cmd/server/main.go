@@ -63,6 +63,12 @@ func main() {
 	// 初始化业务模块 Handler
 	businessHandler := handler.NewBusinessHandler(db, rdb)
 
+	// 初始化 PayPluginConfig Handler
+	payPluginConfigHandler := handler.NewPayPluginConfigHandler(db)
+
+	// 初始化 支付宝子请求 Handler
+	alipaySubRequestHandler := handler.NewAlipaySubRequestHandler(db, rdb)
+
 	// 注册内置 Hook
 	service.RegisterBuiltinHooks(db)
 
@@ -102,6 +108,9 @@ func main() {
 
 		// Telegram Bot 回调（公开，由外部 Telegram Bot 调用）
 		api.POST("/business/tenant_yufu/bot/telegram/", businessHandler.TenantYufuBotTelegram)
+
+		// 支付宝直付通进件回调通知（公开，由支付宝服务器回调）
+		api.GET("/alipay/sub/request/indirect/notify/", alipaySubRequestHandler.GetIndirectNotify)
 	}
 
 	// ===== 需要认证的接口 =====
@@ -553,6 +562,31 @@ func main() {
 			jobs.POST("/delete_order/", jobsHandler.DeleteOrder)
 			jobs.POST("/delete_log/", jobsHandler.DeleteLog)
 			jobs.POST("/auto_transfer/", jobsHandler.AutoTransfer)
+		}
+
+		// ===== 插件配置管理 =====
+		pluginConfig := auth.Group("/payment/plugin/config")
+		{
+			pluginConfig.GET("/", payPluginConfigHandler.List)
+			pluginConfig.POST("/", payPluginConfigHandler.Create)
+			pluginConfig.GET("/:id/", payPluginConfigHandler.Retrieve)
+			pluginConfig.PUT("/:id/", payPluginConfigHandler.Update)
+			pluginConfig.DELETE("/:id/", payPluginConfigHandler.Delete)
+			pluginConfig.POST("/save_content/", payPluginConfigHandler.SaveContent)
+			pluginConfig.GET("/get_relation_info/", payPluginConfigHandler.GetRelationInfo)
+		}
+
+		// ===== 支付宝直付通子请求 =====
+		subRequest := auth.Group("/alipay/sub/request")
+		{
+			subRequest.GET("/", alipaySubRequestHandler.List)
+			subRequest.GET("/:external_id/", alipaySubRequestHandler.Retrieve)
+			subRequest.POST("/image/upload/", alipaySubRequestHandler.UploadImage)
+			subRequest.GET("/indirect/id/", alipaySubRequestHandler.GetIndirectID)
+			subRequest.POST("/indirect/:indirect_id/draft/", alipaySubRequestHandler.IndirectCreate)
+			subRequest.POST("/indirect/:indirect_id/query/", alipaySubRequestHandler.IndirectQuery)
+			subRequest.POST("/indirect/:indirect_id/request/", alipaySubRequestHandler.IndirectRequest)
+			subRequest.POST("/indirect/:indirect_id/remote/", alipaySubRequestHandler.IndirectRemote)
 		}
 
 		// ===== 域名鉴权（nginx subrequest） =====
