@@ -14,6 +14,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
+	"github.com/gamewinner2019/FlowManPay/internal/middleware"
 	"github.com/gamewinner2019/FlowManPay/internal/model"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/response"
 	"github.com/gamewinner2019/FlowManPay/internal/pkg/sign"
@@ -510,14 +511,15 @@ func (h *OrderAPIHandler) WechatNotify(c *gin.Context) {
 // 对应 Django 的 retry_notify_all
 func (h *OrderAPIHandler) RetryNotifyAll(c *gin.Context) {
 	// 需要认证，从context获取用户
-	currentUser, exists := c.Get("currentUser")
-	if !exists {
+	user, ok := middleware.GetCurrentUser(c)
+	if !ok || user == nil {
 		response.ErrorResponse(c, "未认证", 4001)
 		return
 	}
-	user, ok := currentUser.(*model.Users)
-	if !ok || user == nil {
-		response.ErrorResponse(c, "未认证", 4001)
+
+	// 仅 admin/operation/tenant 角色可操作
+	if user.Role.Key != model.RoleKeyAdmin && user.Role.Key != model.RoleKeyOperation && user.Role.Key != model.RoleKeyTenant {
+		response.ErrorResponse(c, "无权操作", 4003)
 		return
 	}
 
@@ -548,6 +550,11 @@ func (h *OrderAPIHandler) Reorder(c *gin.Context) {
 	var order model.Order
 	if err := h.DB.Where("id = ?", id).First(&order).Error; err != nil {
 		response.ErrorResponse(c, "订单不存在")
+		return
+	}
+
+	// 订单归属权检查（复用 OrderHandler 的权限逻辑）
+	if !h.checkOrderOwnership(c, &order) {
 		return
 	}
 
@@ -613,7 +620,7 @@ func (h *OrderAPIHandler) deviceSubmitNotify(device int, orderNo string) {
 	service.GetHookRegistry().TriggerDevice(h.DB, &order, &deviceDetail)
 }
 
-// successNotify 微信通知成功后的处理流程
+// successNotify 微信通知成功后的处理流程（使用实际支付时间）
 func (h *OrderAPIHandler) successNotify(orderNo string, ticketNo string, payTimeStr string, pluginType string) {
 	// 更新票据号（通过订单关联）
 	var order model.Order
@@ -625,8 +632,88 @@ func (h *OrderAPIHandler) successNotify(orderNo string, ticketNo string, payTime
 		Where("order_id = ?", order.ID).
 		Update("ticket_no", ticketNo)
 
-	// 触发订单完成流程（复用 notify.go 中的逻辑）
-	SuccessOrderByQuery(h.DB, orderNo)
+	// 解析实际支付时间（与 NotifyHandler.successOrder 保持一致）
+	var payTime time.Time
+	if payTimeStr != "" {
+		parsed, err := time.ParseInLocation("2006-01-02 15:04:05", payTimeStr, time.Local)
+		if err == nil {
+			payTime = parsed
+		} else {
+			payTime = time.Now()
+		}
+	} else {
+		payTime = time.Now()
+	}
+
+	// 查询订单（只处理非成功状态）
+	if err := h.DB.Where("order_no = ? AND order_status NOT IN ?", orderNo,
+		[]model.OrderStatus{model.OrderStatusSuccessPre, model.OrderStatusSuccess}).
+		First(&order).Error; err != nil {
+		log.Printf("[微信通知] 订单已完成, 订单号: %s", orderNo)
+		// 已经是 SUCCESS_PRE 状态，尝试触发商户通知
+		var existingOrder model.Order
+		if err := h.DB.Where("order_no = ? AND order_status = ?", orderNo, model.OrderStatusSuccessPre).
+			First(&existingOrder).Error; err == nil {
+			h.triggerMerchantNotify(orderNo)
+		}
+		return
+	}
+
+	orderBefore := int(order.OrderStatus)
+
+	// 原子更新订单状态为 SUCCESS_PRE，使用实际支付时间
+	result := h.DB.Model(&model.Order{}).Where("order_no = ? AND order_status NOT IN ?", orderNo,
+		[]model.OrderStatus{model.OrderStatusSuccessPre, model.OrderStatusSuccess}).
+		Updates(map[string]interface{}{
+			"order_status": model.OrderStatusSuccessPre,
+			"pay_datetime": payTime,
+		})
+	if result.RowsAffected == 0 {
+		log.Printf("[微信通知] 订单已被其他进程处理, 订单号: %s", orderNo)
+		h.triggerMerchantNotify(orderNo)
+		return
+	}
+
+	log.Printf("[微信通知] 订单完成, 订单号: %s", orderNo)
+
+	// 获取订单详情
+	var detail model.OrderDetail
+	if err := h.DB.Where("order_id = ?", order.ID).First(&detail).Error; err != nil {
+		log.Printf("[微信通知] 订单详情不存在, 订单号: %s", orderNo)
+		return
+	}
+
+	// 触发插件成功回调
+	responder := plugin.GetByKey(pluginType)
+	if responder != nil {
+		args := plugin.CallbackArgs{
+			PluginType:  pluginType,
+			OrderNo:     orderNo,
+			OutOrderNo:  order.OutOrderNo,
+			Money:       order.Money,
+			OrderBefore: orderBefore,
+			OrderAfter:  int(model.OrderStatusSuccessPre),
+		}
+		if detail.PluginID != nil {
+			args.PluginID = int(*detail.PluginID)
+		}
+		if detail.ProductID != "" {
+			args.ProductID, _ = strconv.Atoi(detail.ProductID)
+		}
+		if order.PayChannelID != nil {
+			args.ChannelID = int(*order.PayChannelID)
+		}
+		if err := responder.CallbackSuccess(h.DB, args); err != nil {
+			log.Printf("[微信通知] 插件回调失败: %v", err)
+		}
+	}
+
+	// 触发成功 hooks（手续费扣减、统计更新等）
+	h.DB.Preload("Merchant").Preload("Merchant.Parent").Where("id = ?", order.ID).First(&order)
+	service.GetHookRegistry().TriggerSuccess(h.DB, &order, &detail)
+
+	// 触发商户通知
+	h.triggerMerchantNotify(orderNo)
 }
 
 // retryAllNotify 重试全部待通知订单
@@ -737,6 +824,62 @@ func (h *OrderAPIHandler) triggerMerchantNotify(orderNo string) {
 	}
 
 	go h.NotificationFactory.StartMerchantNotify(orderNo, detail.NotifyURL, detail.NotifyMoney, payTime, 5)
+}
+
+// checkOrderOwnership 检查当前用户是否有权操作该订单
+// 复用 OrderHandler.checkOrderOwnership 的逻辑
+func (h *OrderAPIHandler) checkOrderOwnership(c *gin.Context, order *model.Order) bool {
+	currentUser, ok := middleware.GetCurrentUser(c)
+	if !ok || currentUser == nil {
+		response.ErrorResponse(c, "未获取到用户信息", 4001)
+		return false
+	}
+	switch currentUser.Role.Key {
+	case model.RoleKeyAdmin, model.RoleKeyOperation:
+		return true
+	case model.RoleKeyTenant:
+		var tenant model.Tenant
+		if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&tenant).Error; err != nil {
+			response.ErrorResponse(c, "租户信息不存在")
+			return false
+		}
+		if order.MerchantID == nil {
+			response.ErrorResponse(c, "无权操作该订单")
+			return false
+		}
+		var merchant model.Merchant
+		if err := h.DB.Where("id = ? AND parent_id = ?", *order.MerchantID, tenant.ID).First(&merchant).Error; err != nil {
+			response.ErrorResponse(c, "无权操作该订单")
+			return false
+		}
+		return true
+	case model.RoleKeyMerchant:
+		var merchant model.Merchant
+		if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&merchant).Error; err != nil {
+			response.ErrorResponse(c, "商户信息不存在")
+			return false
+		}
+		if order.MerchantID == nil || *order.MerchantID != merchant.ID {
+			response.ErrorResponse(c, "无权操作该订单")
+			return false
+		}
+		return true
+	case model.RoleKeyWriteoff:
+		var writeoff model.WriteOff
+		if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&writeoff).Error; err != nil {
+			response.ErrorResponse(c, "核销信息不存在")
+			return false
+		}
+		var detail model.OrderDetail
+		if err := h.DB.Where("order_id = ? AND writeoff_id = ?", order.ID, writeoff.ID).First(&detail).Error; err != nil {
+			response.ErrorResponse(c, "无权操作该订单")
+			return false
+		}
+		return true
+	default:
+		response.ErrorResponse(c, "无权操作该订单")
+		return false
+	}
 }
 
 // getNotificationStatus 将内部订单状态映射为对外通知状态码
