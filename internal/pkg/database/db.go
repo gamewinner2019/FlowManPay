@@ -148,6 +148,9 @@ func autoMigrate() {
 		&model.TenantYufuUser{},
 		&model.PhoneProduct{},
 		&model.PhoneOrderFlow{},
+		// 快速转账模型
+		&model.AlipayQuickTransfer{},
+		&model.QuickTransferHistory{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)

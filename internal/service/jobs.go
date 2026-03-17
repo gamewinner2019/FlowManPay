@@ -364,3 +364,316 @@ func (s *JobsService) checkUserExpire() {
 		log.Printf("[Jobs] 发现停用用户: %s (ID: %d)", user.Username, user.ID)
 	}
 }
+
+// ===== 未分账检查 =====
+
+// CheckNoSplitHistory 检查前10分钟内未分账的记录，重新加入分账队列
+func (s *JobsService) CheckNoSplitHistory() (int, error) {
+	tenMinAgo := time.Now().Add(-10 * time.Minute)
+	fiveHoursAgo := time.Now().Add(-5 * time.Hour)
+
+	var histories []model.SplitHistory
+	err := s.DB.Where("split_status IN ? AND hide = ? AND alipay_product_id IS NOT NULL AND create_datetime >= ? AND create_datetime <= ?",
+		[]int{0}, true, fiveHoursAgo, tenMinAgo).
+		Order("create_datetime ASC").
+		Find(&histories).Error
+	if err != nil {
+		return 0, fmt.Errorf("查询未分账记录失败: %v", err)
+	}
+
+	count := len(histories)
+	if count == 0 {
+		return 0, nil
+	}
+
+	// 将未分账记录重新标记为待分账（split_status=0），触发重试
+	for _, h := range histories {
+		s.DB.Model(&model.SplitHistory{}).Where("id = ? AND split_status = ?", h.ID, 0).
+			Update("split_status", 0) // 保持待分账状态，等待分账任务拾取
+		log.Printf("[Jobs] 重新分账: history_id=%d, order_id=%s, product_id=%v", h.ID, h.OrderID, h.AlipayProductID)
+	}
+
+	log.Printf("[Jobs] 未分账检查完成，重新加入 %d 条记录", count)
+	return count, nil
+}
+
+// ===== 订单删除 =====
+
+// DeleteOrder 批量删除4天前的非封禁订单（每批10000条，带间隔防止锁表）
+func (s *JobsService) DeleteOrder() (int64, error) {
+	cutoff := time.Now().AddDate(0, 0, -4)
+	var totalDeleted int64
+
+	for {
+		// 查询一批待删除的订单ID
+		var ids []string
+		s.DB.Model(&model.Order{}).
+			Where("create_datetime < ? AND (remarks NOT LIKE ? OR remarks IS NULL OR remarks = '')", cutoff, "%封禁%").
+			Limit(10000).
+			Pluck("id", &ids)
+
+		if len(ids) == 0 {
+			break
+		}
+
+		// 先删除关联的 OrderDetail
+		s.DB.Where("order_id IN ?", ids).Delete(&model.OrderDetail{})
+		// 删除关联的 OrderDeviceDetails
+		s.DB.Where("order_id IN ?", ids).Delete(&model.OrderDeviceDetails{})
+		// 删除关联的 ReOrder
+		s.DB.Where("order_id IN ?", ids).Delete(&model.ReOrder{})
+
+		// 删除订单本身
+		result := s.DB.Where("id IN ?", ids).Delete(&model.Order{})
+		totalDeleted += result.RowsAffected
+
+		log.Printf("[Jobs] 删除订单批次: %d 条", result.RowsAffected)
+
+		// 间隔500ms防止锁表
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	log.Printf("[Jobs] 订单删除完成，共删除 %d 条", totalDeleted)
+	return totalDeleted, nil
+}
+
+// ===== 日志清理 =====
+
+// DeleteLog 批量删除4天前的操作日志（每批10000条，带间隔防止锁表）
+func (s *JobsService) DeleteLog() (int64, error) {
+	cutoff := time.Now().AddDate(0, 0, -4)
+	var totalDeleted int64
+
+	for {
+		var ids []uint
+		s.DB.Model(&model.OperationLog{}).
+			Where("create_datetime < ?", cutoff).
+			Limit(10000).
+			Pluck("id", &ids)
+
+		if len(ids) == 0 {
+			break
+		}
+
+		result := s.DB.Where("id IN ?", ids).Delete(&model.OperationLog{})
+		totalDeleted += result.RowsAffected
+
+		log.Printf("[Jobs] 删除日志批次: %d 条", result.RowsAffected)
+
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	log.Printf("[Jobs] 日志清理完成，共删除 %d 条", totalDeleted)
+	return totalDeleted, nil
+}
+
+// ===== 自动转账 =====
+
+// AutoTransfer 查找所有开启自动转账的快速转账设置，为每个执行转账任务
+func (s *JobsService) AutoTransfer() (int, error) {
+	// 从系统配置读取间隔和每秒笔数
+	interval := s.getSystemConfigInt("main", "quick_interval", 10)
+	orderCountPerSecond := s.getSystemConfigInt("main", "quick_pre_count", 50)
+
+	var transfers []model.AlipayQuickTransfer
+	err := s.DB.Preload("Alipay").Preload("Alipay.Writeoff").
+		Where("auto = ?", true).
+		Find(&transfers).Error
+	if err != nil {
+		return 0, fmt.Errorf("查询快速转账设置失败: %v", err)
+	}
+
+	count := 0
+	for _, at := range transfers {
+		if at.Alipay == nil || !at.Alipay.Status || at.Alipay.IsDelete {
+			continue
+		}
+
+		go s.executeQuickTransfer(&at, interval, orderCountPerSecond)
+		count++
+	}
+
+	log.Printf("[Jobs] 自动转账启动 %d 个任务", count)
+	return count, nil
+}
+
+// executeQuickTransfer 执行单个快速转账任务
+func (s *JobsService) executeQuickTransfer(at *model.AlipayQuickTransfer, interval int, orderCountPerSecond int) {
+	if at.Alipay == nil || at.Alipay.Writeoff == nil {
+		return
+	}
+	tenantID := at.Alipay.Writeoff.ParentID
+
+	// 计算总转账数量和总金额
+	totalCount := orderCountPerSecond * interval
+	oneMoney := at.Money
+	if oneMoney <= 0 {
+		oneMoney = 4900
+	}
+	planMoney := int64(totalCount) * oneMoney
+
+	// 获取可分配的转账用户
+	users := s.getRandTransferUsers(planMoney, tenantID, *at.AlipayID, totalCount, oneMoney)
+	if len(users) == 0 {
+		log.Printf("[Jobs] 自动转账: product_id=%d, 无可用转账用户", *at.AlipayID)
+		return
+	}
+
+	sleep := float64(at.RunInterval) / 1000.0
+	if sleep <= 0 {
+		sleep = 0.8
+	}
+
+	// 分批创建转账历史并执行（每批 orderCountPerSecond 条）
+	for i := 0; i < len(users); i += orderCountPerSecond {
+		end := i + orderCountPerSecond
+		if end > len(users) {
+			end = len(users)
+		}
+		batch := users[i:end]
+
+		for _, h := range batch {
+			s.DB.Create(&h)
+			log.Printf("[Jobs] 自动转账: 创建转账记录 id=%s, product_id=%v, user=%s, money=%d",
+				h.ID, h.AlipayProductID, h.UserUsername, h.Money)
+		}
+
+		time.Sleep(time.Duration(sleep*1000) * time.Millisecond)
+	}
+
+	log.Printf("[Jobs] 自动转账完成: product_id=%d, 共创建 %d 条转账记录", *at.AlipayID, len(users))
+}
+
+// getRandTransferUsers 按权重随机选择转账用户，生成批量转账历史记录
+func (s *JobsService) getRandTransferUsers(planMoney int64, tenantID uint, productID uint, totalCount int, oneMoney int64) []model.QuickTransferHistory {
+	today := time.Now().Format("2006-01-02")
+
+	// 查询符合条件的分账用户（按组分组）
+	type userWithGroup struct {
+		model.AlipaySplitUser
+		TodayMoney  int64  `gorm:"column:today_money"`
+		GroupWeight int    `gorm:"column:group_weight"`
+		GroupID     uint   `gorm:"column:group_id"`
+		PreStatus   bool   `gorm:"column:pre_status"`
+		PrePay      int64  `gorm:"column:pre_pay"`
+	}
+
+	var users []userWithGroup
+	s.DB.Table(model.AlipaySplitUser{}.TableName()+" AS u").
+		Select("u.*, COALESCE(SUM(f.flow), 0) AS today_money, g.weight AS group_weight, u.group_id, g.pre_status, COALESCE(p.pre_pay, 0) AS pre_pay").
+		Joins("JOIN "+model.AlipaySplitUserGroup{}.TableName()+" AS g ON g.id = u.group_id").
+		Joins("LEFT JOIN "+model.AlipaySplitUserFlow{}.TableName()+" AS f ON f.alipay_user_id = u.id AND f.date = ?", today).
+		Joins("LEFT JOIN "+model.AlipaySplitUserGroupPre{}.TableName()+" AS p ON p.group_id = g.id").
+		Joins("JOIN "+model.AlipaySplitUserGroup{}.TableName()+"_transfer_alipay_product AS gp ON gp.alipay_split_user_group_id = g.id AND gp.alipay_product_id = ?", productID).
+		Where("g.status = ? AND g.tenant_id = ? AND u.status = ?", true, tenantID, true).
+		Group("u.id").
+		Find(&users)
+
+	if len(users) == 0 {
+		return nil
+	}
+
+	// 按组聚合
+	type groupInfo struct {
+		Weight int
+		Users  []userWithGroup
+	}
+	groupMap := make(map[uint]*groupInfo)
+	var totalWeight int
+	for _, u := range users {
+		// 预付检查
+		if u.PreStatus && u.PrePay < int64(u.Percentage*float64(oneMoney)/100) {
+			continue
+		}
+		// 日限额检查
+		if u.LimitMoney > 0 && u.TodayMoney+oneMoney > int64(u.LimitMoney) {
+			continue
+		}
+
+		gid := u.GroupID
+		if _, ok := groupMap[gid]; !ok {
+			groupMap[gid] = &groupInfo{Weight: u.GroupWeight}
+			totalWeight += u.GroupWeight
+		}
+		groupMap[gid].Users = append(groupMap[gid].Users, u)
+	}
+
+	if len(groupMap) == 0 || totalWeight == 0 {
+		return nil
+	}
+
+	// 按权重分配转账数量到各组
+	groups := make([]*groupInfo, 0, len(groupMap))
+	for _, g := range groupMap {
+		groups = append(groups, g)
+	}
+
+	var result []model.QuickTransferHistory
+	remainCount := totalCount
+
+	for i, g := range groups {
+		var weightCount int
+		if i == len(groups)-1 {
+			weightCount = remainCount
+		} else {
+			percent := float64(g.Weight) / float64(totalWeight)
+			weightCount = int(float64(totalCount) * percent)
+			remainCount -= weightCount
+		}
+
+		if len(g.Users) == 0 {
+			continue
+		}
+
+		for j := 0; j < weightCount; j++ {
+			// 随机选择用户
+			user := g.Users[j%len(g.Users)]
+
+			// 查找产品信息
+			var product model.AlipayProduct
+			s.DB.First(&product, productID)
+
+			history := model.QuickTransferHistory{
+				ID:              model.CreateQuickTransferOrderNo(),
+				AlipayProductID: &productID,
+				AlipayUserID:    &user.ID,
+				AlipayUserGroupID: &user.GroupID,
+				Money:           int(oneMoney),
+				TransferStatus:  0,
+				UID:             product.UID,
+				ProductName:     product.Name,
+				UserUsername:     user.Username,
+				UserUsernameType: user.UsernameType,
+				UserName:        user.Name,
+				TenantID:        int64(tenantID),
+			}
+
+			result = append(result, history)
+		}
+	}
+
+	return result
+}
+
+// getSystemConfigInt 从数据库读取系统配置整数值
+func (s *JobsService) getSystemConfigInt(parentKey string, childKey string, defaultVal int) int {
+	var parent model.SystemConfig
+	if err := s.DB.Where("`key` = ?", parentKey).First(&parent).Error; err != nil {
+		return defaultVal
+	}
+	var child model.SystemConfig
+	if err := s.DB.Where("parent_id = ? AND `key` = ?", parent.ID, childKey).First(&child).Error; err != nil {
+		return defaultVal
+	}
+	if child.Value == nil {
+		return defaultVal
+	}
+
+	// 尝试解析为数字
+	val := strings.Trim(*child.Value, "\"")
+	var result int
+	if _, err := fmt.Sscanf(val, "%d", &result); err != nil {
+		return defaultVal
+	}
+	return result
+}

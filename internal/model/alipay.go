@@ -525,3 +525,72 @@ type TenantCookieFile struct {
 func (TenantCookieFile) TableName() string {
 	return TablePrefix + "tenant_cookie_file"
 }
+
+// ===== AlipayQuickTransfer 支付宝快速转账设置 =====
+
+// AlipayQuickTransfer 支付宝快速转账设置
+type AlipayQuickTransfer struct {
+	ID             uint           `gorm:"primaryKey" json:"id"`
+	AlipayID       *uint          `gorm:"uniqueIndex" json:"alipay_id"`
+	Alipay         *AlipayProduct `gorm:"foreignKey:AlipayID" json:"alipay,omitempty"`
+	Auto           bool           `gorm:"default:false" json:"auto"`                   // 自动划转
+	LowerLimit     int64          `gorm:"default:100000" json:"lower_limit"`            // 金额下限(分)
+	RunInterval    int            `gorm:"default:800" json:"run_interval"`              // 执行间隔(毫秒)
+	Money          int64          `gorm:"default:4900" json:"money"`                    // 单笔转账金额(分)
+	Description    string         `gorm:"size:255;default:''" json:"description"`
+	Creator        *uint          `gorm:"index" json:"creator"`
+	Modifier       *uint          `json:"modifier"`
+	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (AlipayQuickTransfer) TableName() string {
+	return TablePrefix + "alipay_quick_transfer"
+}
+
+// ===== QuickTransferHistory 快速转账历史 =====
+
+// CreateQuickTransferOrderNo 生成快速转账单号
+func CreateQuickTransferOrderNo() string {
+	now := time.Now()
+	return fmt.Sprintf("Q%s%06d%03d", now.Format("20060102150405"), now.Nanosecond()/1e3, now.Nanosecond()%1000)
+}
+
+// QuickTransferHistory 快速转账历史记录
+type QuickTransferHistory struct {
+	ID               string              `gorm:"size:30;primaryKey" json:"id"`
+	AlipayProductID  *uint               `gorm:"index" json:"alipay_product_id"`
+	AlipayProduct    *AlipayProduct      `gorm:"foreignKey:AlipayProductID" json:"alipay_product,omitempty"`
+	OrderID          *string             `gorm:"size:30;index" json:"order_id"`
+	Order            *Order              `gorm:"foreignKey:OrderID" json:"order,omitempty"`
+	AlipayUserID     *uint               `gorm:"index" json:"alipay_user_id"`
+	AlipayUser       *AlipaySplitUser    `gorm:"foreignKey:AlipayUserID" json:"alipay_user,omitempty"`
+	AlipayUserGroupID *uint              `gorm:"index" json:"alipay_user_group_id"`
+	AlipayUserGroup  *AlipaySplitUserGroup `gorm:"foreignKey:AlipayUserGroupID" json:"alipay_user_group,omitempty"`
+	Money            int                 `gorm:"default:0" json:"money"`
+	Error            string              `gorm:"type:text" json:"error"`
+	TicketOrderNo    string              `gorm:"size:255" json:"ticket_order_no"`
+	UID              string              `gorm:"size:255" json:"uid"`
+	ProductName      string              `gorm:"size:255" json:"product_name"`
+	UserUsername     string              `gorm:"size:255" json:"user_username"`
+	UserUsernameType int                 `gorm:"default:0" json:"user_username_type"`
+	UserName         string              `gorm:"size:255" json:"user_name"`
+	WriteoffName     string              `gorm:"size:255" json:"writeoff_name"`
+	WriteoffID       int64               `gorm:"default:0;index" json:"writeoff"`
+	TenantID         int64               `gorm:"default:0;index" json:"tenant_id"`
+	ProductType      int                 `gorm:"default:0" json:"product_type"`
+	SplitType        int                 `gorm:"default:0" json:"split_type"`
+	SettleNo         string              `gorm:"size:64" json:"settle_no"`
+	TransferStatus   int                 `gorm:"default:0" json:"transfer_status"` // 0=未转账 1=成功 2=失败
+	Description      string              `gorm:"size:255;default:''" json:"description"`
+	Creator          *uint               `gorm:"index" json:"creator"`
+	Modifier         *uint               `json:"modifier"`
+	CreateDatetime   time.Time           `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime   time.Time           `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt        gorm.DeletedAt      `gorm:"index" json:"-"`
+}
+
+func (QuickTransferHistory) TableName() string {
+	return TablePrefix + "quick_transfer_history"
+}
