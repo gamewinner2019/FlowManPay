@@ -335,6 +335,7 @@ type SplitHistory struct {
 	OrderID        string         `gorm:"size:30;index" json:"order"`
 	AlipayProductID *uint         `gorm:"index" json:"alipay_product"`
 	IsAsync        bool           `gorm:"default:false" json:"is_async"`
+	Hide           bool           `gorm:"default:false" json:"hide"`
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
@@ -465,13 +466,16 @@ func (AlipayComplain) TableName() string {
 // TenantCookie 租户Cookie/小号库存
 type TenantCookie struct {
 	ID             uint           `gorm:"primaryKey" json:"id"`
-	PluginID       uint           `gorm:"index" json:"plugin_id"`
-	TenantID       uint           `gorm:"index" json:"tenant_id"`
-	Content        string         `gorm:"type:text" json:"content"`                   // Cookie内容(JSON)
-	Extra          string         `gorm:"type:text" json:"extra"`                     // 额外信息(JSON)
+	PluginID       *uint          `gorm:"index" json:"plugin_id"`
+	TenantID       *uint          `gorm:"index" json:"tenant_id"`
+	FileID         *uint          `gorm:"index" json:"file_id"`
+	Content        string         `gorm:"type:json" json:"content"`                   // Cookie内容(JSON)
 	Status         bool           `gorm:"default:true" json:"status"`                 // 是否启用
+	RealName       bool           `gorm:"default:false" json:"real_name"`
+	Address        bool           `gorm:"default:false" json:"address"`
 	Remarks        string         `gorm:"size:255" json:"remarks"`
 	Description    string         `gorm:"size:255;default:''" json:"description"`
+	Version        int            `gorm:"default:0" json:"-"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
 	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
@@ -498,4 +502,26 @@ type TenantCookieDayStatistics struct {
 
 func (TenantCookieDayStatistics) TableName() string {
 	return TablePrefix + "tenant_cookie_day_statistics"
+}
+
+// ===== TenantCookieFile 租户小号文件 =====
+
+// TenantCookieFile 租户小号文件
+type TenantCookieFile struct {
+	ID             uint           `gorm:"primaryKey" json:"id"`
+	TenantID       *uint          `gorm:"index" json:"tenant_id"`
+	Tenant         *Tenant        `gorm:"foreignKey:TenantID" json:"tenant,omitempty"`
+	PluginID       *uint          `gorm:"index" json:"plugin_id"`
+	Plugin         *PayPlugin     `gorm:"foreignKey:PluginID" json:"plugin,omitempty"`
+	Filename       string         `gorm:"size:255" json:"filename"`
+	Status         bool           `gorm:"default:true" json:"status"`
+	Creator        *uint          `gorm:"index" json:"creator"`
+	Modifier       *uint          `json:"modifier"`
+	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (TenantCookieFile) TableName() string {
+	return TablePrefix + "tenant_cookie_file"
 }

@@ -117,6 +117,37 @@ func autoMigrate() {
 		// 封禁模型
 		&model.BanUserId{},
 		&model.BanIp{},
+		// 支付宝原生管理模型
+		&model.AlipayProduct{},
+		&model.AlipayProductDayStatistics{},
+		&model.AlipayWeight{},
+		&model.AlipayShenma{},
+		&model.AlipayShenmaDayStatistics{},
+		&model.AlipayPublicPool{},
+		&model.AlipayPublicPoolDayStatistics{},
+		&model.AlipaySplitUserGroup{},
+		&model.AlipaySplitUserGroupPre{},
+		&model.AlipaySplitUserGroupPreHistory{},
+		&model.AlipaySplitUserGroupAddMoney{},
+		&model.AlipaySplitUser{},
+		&model.AlipaySplitUserFlow{},
+		&model.CollectionUser{},
+		&model.CollectionDayFlow{},
+		&model.AlipayTransferUserFlow{},
+		&model.SplitHistory{},
+		&model.AlipayProductTag{},
+		&model.AlipayTransferUser{},
+		&model.TransferHistory{},
+		&model.AlipayComplain{},
+		&model.TenantCookie{},
+		&model.TenantCookieDayStatistics{},
+		&model.TenantCookieFile{},
+		// 业务模型
+		&model.MerchantPreHistory{},
+		&model.WriteoffPreHistory{},
+		&model.TenantYufuUser{},
+		&model.PhoneProduct{},
+		&model.PhoneOrderFlow{},
 	)
 	if err != nil {
 		log.Fatalf("数据库迁移失败: %v", err)
