@@ -63,7 +63,7 @@ func (h *AuthHandler) Captcha(c *gin.Context) {
 
 		// 将验证码存入Redis, 5分钟过期
 		ctx := context.Background()
-		code := base64Captcha.DefaultMemStore.Get(id, false)
+		code := base64Captcha.DefaultMemStore.Get(id, true)
 		captchaKey := fmt.Sprintf("captcha:%s", id)
 		h.RDB.Set(ctx, captchaKey, code, 5*time.Minute)
 

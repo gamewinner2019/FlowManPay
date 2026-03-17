@@ -368,15 +368,7 @@ func (s *OrderService) CheckChannel(ctx *OrderCreateCtx, channelID uint) error {
 		}
 	}
 
-	// 检查商户通道和租户通道
-	if err := s.checkMerchantChannel(ctx); err != nil {
-		return err
-	}
-	if err := s.checkTenantChannel(ctx); err != nil {
-		return err
-	}
-
-	// 通道固定金额模式
+	// 通道固定金额模式（在浮动调整前验证基础金额）
 	if len(channel.Moneys) > 0 {
 		found := false
 		for _, m := range channel.Moneys {
@@ -411,6 +403,14 @@ func (s *OrderService) CheckChannel(ctx *OrderCreateCtx, channelID uint) error {
 			return NewOrderProcessingError(7313,
 				fmt.Sprintf("金额%d不在范围[%d,%d]内", ctx.Money, channel.MinMoney, channel.MaxMoney))
 		}
+	}
+
+	// 检查商户通道和租户通道（在浮动调整后计算手续费，确保基于最终金额）
+	if err := s.checkMerchantChannel(ctx); err != nil {
+		return err
+	}
+	if err := s.checkTenantChannel(ctx); err != nil {
+		return err
 	}
 
 	return nil

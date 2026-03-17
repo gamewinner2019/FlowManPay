@@ -1925,14 +1925,7 @@ func (h *BusinessHandler) AuthResponderCheckAuth(c *gin.Context) {
 		return
 	}
 
-	raw := fmt.Sprintf("%s-%s-%s-%s-%s", path, parts[0], parts[1], parts[2], domainAuthKey)
-	hash := fmt.Sprintf("%x", md5.Sum([]byte(raw)))
-
-	if hash != parts[3] {
-		c.Status(403)
-		return
-	}
-
+	// 先检查时间戳是否过期（避免对过期token做不必要的哈希运算）
 	authTimeout, err := strconv.ParseInt(authTimeoutStr, 10, 64)
 	if err != nil {
 		c.Status(403)
@@ -1944,6 +1937,15 @@ func (h *BusinessHandler) AuthResponderCheckAuth(c *gin.Context) {
 		return
 	}
 	if ts+authTimeout < time.Now().Unix() {
+		c.Status(403)
+		return
+	}
+
+	// 再验证哈希
+	raw := fmt.Sprintf("%s-%s-%s-%s-%s", path, parts[0], parts[1], parts[2], domainAuthKey)
+	hash := fmt.Sprintf("%x", md5.Sum([]byte(raw)))
+
+	if hash != parts[3] {
 		c.Status(403)
 		return
 	}

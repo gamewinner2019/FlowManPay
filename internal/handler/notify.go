@@ -92,12 +92,16 @@ func (h *NotifyHandler) AlipayNotify(c *gin.Context) {
 	totalAmount := data["total_amount"]
 	ticketNo := data["trade_no"]
 
-	// 查找订单
+	// 查找订单（优先按 order_no 查，fallback 按 id 查——
+	// 部分插件如 gold/card_uid/confirm_uid 使用 RawOrderNo(即订单ID) 作为标识）
 	var order model.Order
 	if err := h.DB.Where("order_no = ?", orderNo).First(&order).Error; err != nil {
-		log.Printf("[接收通知] %s 订单不存在, 订单号: %s", pluginType, orderNo)
-		c.String(http.StatusBadRequest, "fail")
-		return
+		// fallback: 按订单ID查询
+		if err2 := h.DB.Where("id = ?", orderNo).First(&order).Error; err2 != nil {
+			log.Printf("[接收通知] %s 订单不存在, 订单号: %s", pluginType, orderNo)
+			c.String(http.StatusBadRequest, "fail")
+			return
+		}
 	}
 
 	// 验证金额（将支付宝返回的元字符串解析为分进行整数比较，避免浮点精度问题）
