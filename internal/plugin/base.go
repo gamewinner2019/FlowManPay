@@ -470,7 +470,10 @@ func PluginCreateOrder(db *gorm.DB, rdb interface{}, orderNo string, rawOrderNo 
 		args.ProductID = toInt(detail.ProductID)
 	}
 	if detail.WriteoffID != nil {
-		args.TenantID = int(*detail.WriteoffID)
+		var writeoff model.WriteOff
+		if err := db.First(&writeoff, *detail.WriteoffID).Error; err == nil {
+			args.TenantID = int(writeoff.ParentID)
+		}
 	}
 	if detail.DomainID != nil {
 		args.DomainID = int(*detail.DomainID)

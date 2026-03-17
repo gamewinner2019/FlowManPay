@@ -43,18 +43,21 @@ func NewCashierHandler(db *gorm.DB, rdb *redis.Client, templateDir string) *Cash
 
 // templateData 模板渲染数据
 type templateData struct {
-	OrderNo  string
-	Title    string
-	Money    string
-	URL      string
-	Error    string
-	CheckURL string
-	StartURL string
-	AuthKey  string
-	SDK      string
-	UID      string
-	Remark   string
-	TradeNo  string
+	OrderNo   string
+	Title     string
+	Money     string
+	URL       string
+	Error     string
+	CheckURL  string
+	StartURL  string
+	AuthKey   string
+	SDK       string
+	UID       string
+	Remark    string
+	TradeNo   string
+	Name      string
+	FirstName string
+	Tm        int64
 }
 
 // renderTemplate 渲染模板
@@ -371,8 +374,43 @@ func (h *CashierHandler) AlipayHgNew(c *gin.Context) {
 // GET /view/:order_no/:money/alipay/uid/
 func (h *CashierHandler) AlipayUID(c *gin.Context) {
 	orderNo := c.Param("order_no")
+	moneyStr := c.Param("money")
+
+	money, _ := strconv.Atoi(moneyStr)
+	moneyFloat := float64(money) / 100.0
+
+	ctx := c.Request.Context()
 	extraSDK := fmt.Sprintf("%s_card_uid_sdk", orderNo)
-	h.TemplatesNew(c, "alipay_uid.html", extraSDK)
+	sdkStr := h.RDB.Get(ctx, extraSDK).Val()
+
+	data := templateData{
+		OrderNo: orderNo,
+		Money:   fmt.Sprintf("%.2f", moneyFloat),
+		Tm:      time.Now().Unix() + 600, // 10分钟倒计时
+	}
+
+	if sdkStr != "" {
+		var sdkData map[string]interface{}
+		if err := json.Unmarshal([]byte(sdkStr), &sdkData); err == nil {
+			if name, ok := sdkData["name"].(string); ok {
+				data.Name = name
+				if len(name) > 0 {
+					data.FirstName = string([]rune(name)[:1])
+				}
+			}
+			if uid, ok := sdkData["uid"].(string); ok {
+				data.UID = uid
+			}
+			if remark, ok := sdkData["remark"].(string); ok {
+				data.Remark = remark
+			}
+			if tm, ok := sdkData["tm"].(float64); ok {
+				data.Tm = int64(tm)
+			}
+		}
+	}
+
+	h.renderTemplate(c, "alipay_uid.html", data)
 }
 
 // AlipayQr 支付宝二维码收银台
@@ -513,10 +551,17 @@ func (h *CashierHandler) otherPay(c *gin.Context, htmlName string) {
 	money, _ := strconv.Atoi(moneyStr)
 	moneyFloat := float64(money) / 100.0
 
+	// 先查询订单获取ID
+	var order model.Order
+	if err := h.DB.Where("order_no = ?", orderNo).First(&order).Error; err != nil {
+		response.ErrorResponse(c, "订单不存在")
+		return
+	}
+
 	// 获取订单详情中的域名
 	var detail model.OrderDetail
-	if err := h.DB.Where("order_id = ?", orderNo).Preload("Domain").First(&detail).Error; err != nil {
-		response.ErrorResponse(c, "订单不存在")
+	if err := h.DB.Where("order_id = ?", order.ID).Preload("Domain").First(&detail).Error; err != nil {
+		response.ErrorResponse(c, "订单详情不存在")
 		return
 	}
 
