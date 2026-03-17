@@ -8,18 +8,19 @@ import (
 
 // Standard response structure matching Django's DetailResponse/ErrorResponse
 type Response struct {
-	Code    int         `json:"code"`
-	Data    interface{} `json:"data"`
-	Msg     string      `json:"msg"`
-	Success bool        `json:"success"`
+	Code int         `json:"code"`
+	Data interface{} `json:"data"`
+	Msg  string      `json:"msg"`
 }
 
-// PageData represents paginated data
+// PageData represents paginated data matching Django's CustomPagination.get_paginated_response
 type PageData struct {
-	Total int64       `json:"total"`
-	Page  int         `json:"page"`
-	Limit int         `json:"limit"`
-	Data  interface{} `json:"data"`
+	Page       int         `json:"page"`
+	Total      int64       `json:"total"`
+	Limit      int         `json:"limit"`
+	IsNext     bool        `json:"is_next"`
+	IsPrevious bool        `json:"is_previous"`
+	Data       interface{} `json:"data"`
 }
 
 // DetailResponse returns a success response with data
@@ -28,10 +29,9 @@ func DetailResponse(c *gin.Context, data interface{}, msg string) {
 		msg = "获取成功"
 	}
 	c.JSON(http.StatusOK, Response{
-		Code:    2000,
-		Data:    data,
-		Msg:     msg,
-		Success: true,
+		Code: 2000,
+		Data: data,
+		Msg:  msg,
 	})
 }
 
@@ -45,10 +45,9 @@ func ErrorResponse(c *gin.Context, msg string, code ...int) {
 		msg = "请求失败"
 	}
 	c.JSON(http.StatusOK, Response{
-		Code:    respCode,
-		Data:    nil,
-		Msg:     msg,
-		Success: false,
+		Code: respCode,
+		Data: nil,
+		Msg:  msg,
 	})
 }
 
@@ -58,10 +57,9 @@ func ErrorResponseWithCode(c *gin.Context, code int, msg string) {
 		msg = "请求失败"
 	}
 	c.JSON(http.StatusOK, Response{
-		Code:    code,
-		Data:    nil,
-		Msg:     msg,
-		Success: false,
+		Code: code,
+		Data: nil,
+		Msg:  msg,
 	})
 }
 
@@ -70,16 +68,23 @@ func PageResponse(c *gin.Context, data interface{}, total int64, page, limit int
 	if msg == "" {
 		msg = "获取成功"
 	}
+	if data == nil {
+		data = []interface{}{}
+		msg = "暂无数据"
+	}
+	isNext := int64(page*limit) < total
+	isPrevious := page > 1
 	c.JSON(http.StatusOK, Response{
 		Code: 2000,
 		Data: PageData{
-			Total: total,
-			Page:  page,
-			Limit: limit,
-			Data:  data,
+			Page:       page,
+			Total:      total,
+			Limit:      limit,
+			IsNext:     isNext,
+			IsPrevious: isPrevious,
+			Data:       data,
 		},
-		Msg:     msg,
-		Success: true,
+		Msg: msg,
 	})
 }
 

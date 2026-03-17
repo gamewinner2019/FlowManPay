@@ -1,7 +1,6 @@
 package model
 
 import (
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -17,8 +16,8 @@ type BanUserId struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -37,8 +36,8 @@ type BanIp struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 

@@ -191,7 +191,7 @@ func (s *SplitService) SaveSplitUserFlow(productID uint, userID uint, change int
 			AlipayUserID:    userID,
 			AlipayProductID: productID,
 			Flow:            int64(change),
-			Date:            date,
+			Date:            model.DateTime{Time: date},
 			TenantID:        tenantID,
 		})
 	}
@@ -225,7 +225,7 @@ func (s *SplitService) updateCollectionFlow(userID uint, change int, date time.T
 		s.DB.Create(&model.CollectionDayFlow{
 			UserID: userID,
 			Flow:   int64(change),
-			Date:   date,
+			Date:   model.DateTime{Time: date},
 		})
 	}
 }

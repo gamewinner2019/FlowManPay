@@ -18,8 +18,8 @@ type Role struct {
 	Remark         string         `gorm:"size:255" json:"remark"`
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 	Permissions    []MenuButton   `gorm:"many2many:dvadmin_system_role_permission;" json:"permissions,omitempty"`
 	Menus          []Menu         `gorm:"many2many:dvadmin_system_role_menu;" json:"menus,omitempty"`
@@ -41,8 +41,8 @@ type RoleNoJoin struct {
 	Remark         string         `gorm:"size:255" json:"remark"`
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -54,7 +54,7 @@ func (RoleNoJoin) TableName() string {
 type Users struct {
 	ID             uint           `gorm:"primaryKey" json:"id"`
 	Password       string         `gorm:"size:128" json:"-"`
-	LastLogin      *time.Time     `json:"last_login"`
+	LastLogin      *DateTime     `json:"last_login"`
 	IsSuperuser    bool           `gorm:"default:false" json:"is_superuser"`
 	Username       string         `gorm:"size:150;uniqueIndex" json:"username"`
 	FirstName      string         `gorm:"size:150" json:"-"`
@@ -76,8 +76,8 @@ type Users struct {
 	TelegramUser   *int64         `json:"telegram_user"`
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -127,8 +127,8 @@ type Menu struct {
 	Visible        bool           `gorm:"default:true" json:"visible"`
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -146,8 +146,8 @@ type MenuButton struct {
 	Method         int            `gorm:"default:0" json:"method"` // 0=GET, 1=POST, 2=PUT, 3=DELETE, ...
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -179,8 +179,8 @@ type GoogleAuth struct {
 	UserID         uint      `gorm:"uniqueIndex" json:"user_id"`
 	Token          string    `gorm:"size:64" json:"-"`
 	Status         bool      `gorm:"default:true" json:"status"`
-	CreateDatetime time.Time `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime `gorm:"autoUpdateTime" json:"update_datetime"`
 }
 
 func (GoogleAuth) TableName() string {
@@ -195,8 +195,8 @@ type ApiWhiteList struct {
 	EnableDatasource bool         `gorm:"default:true" json:"enable_datasource"`
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -214,7 +214,7 @@ type LoginLog struct {
 	OS             string    `gorm:"size:200" json:"os"`
 	LoginType      int       `gorm:"default:1" json:"login_type"` // 1=普通登录
 	Creator        *uint     `json:"creator"`
-	CreateDatetime time.Time `gorm:"autoCreateTime" json:"create_datetime"`
+	CreateDatetime DateTime `gorm:"autoCreateTime" json:"create_datetime"`
 }
 
 func (LoginLog) TableName() string {
@@ -237,8 +237,8 @@ type SystemConfig struct {
 	Setting        *string        `gorm:"type:json" json:"setting"`
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -258,8 +258,8 @@ type Dictionary struct {
 	IsDefault      bool           `gorm:"default:false" json:"is_default"`
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -281,7 +281,7 @@ type OperationLog struct {
 	ResponseCode   string    `gorm:"size:32" json:"response_code"`
 	JSONResult     string    `gorm:"type:text" json:"json_result"`
 	Creator        *uint     `json:"creator"`
-	CreateDatetime time.Time `gorm:"autoCreateTime" json:"create_datetime"`
+	CreateDatetime DateTime `gorm:"autoCreateTime" json:"create_datetime"`
 }
 
 func (OperationLog) TableName() string {

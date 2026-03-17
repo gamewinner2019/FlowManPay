@@ -4,7 +4,6 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -146,8 +145,8 @@ type PayType struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -181,8 +180,8 @@ type PayPlugin struct {
 	Menus          []Menu            `gorm:"many2many:dvadmin_pay_plugin_menus;" json:"menus,omitempty"`
 	Creator        *uint             `gorm:"index" json:"creator"`
 	Modifier       *uint             `json:"modifier"`
-	CreateDatetime time.Time         `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time         `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime         `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime         `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt    `gorm:"index" json:"-"`
 }
 
@@ -210,8 +209,8 @@ type PayPluginConfig struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -242,8 +241,8 @@ type PayChannel struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -266,8 +265,8 @@ type PayChannelTax struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -290,8 +289,8 @@ type MerchantPayChannel struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -313,8 +312,8 @@ type WriteoffPayChannel struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -352,8 +351,8 @@ type PayDomain struct {
 	Description      string         `gorm:"size:255;default:''" json:"description"`
 	Creator          *uint          `gorm:"index" json:"creator"`
 	Modifier         *uint          `json:"modifier"`
-	CreateDatetime   time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime   time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime   DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime   DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -378,8 +377,8 @@ type RechargeHistory struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 

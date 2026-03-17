@@ -84,12 +84,12 @@ func (p *AlipayGoldPlugin) QueryOrder(db *gorm.DB, args QueryOrderArgs) (bool, e
 	if args.Actively {
 		outTime = 1200
 	}
-	endTime := order.CreateDatetime.Add(time.Duration(outTime) * time.Second)
+	endTime := order.CreateDatetime.Time.Add(time.Duration(outTime) * time.Second)
 
 	pageNo := 1
 	errorCount := 0
 	for i := 0; i < 200; i++ {
-		result, err := sdk.BillAccountLogQuery(order.CreateDatetime, endTime, pageNo)
+		result, err := sdk.BillAccountLogQuery(order.CreateDatetime.Time, endTime, pageNo)
 		if err != nil {
 			return false, nil
 		}

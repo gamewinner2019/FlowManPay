@@ -180,7 +180,7 @@ func deviceTypeColumn(dt model.DeviceType) string {
 
 func (s *StatisticsService) upsertDayStatistics(date time.Time) {
 	stat := model.DayStatistics{}
-	stat.Date = date
+	stat.Date = model.DateTime{Time: date}
 	stat.SubmitCount = 1
 	if err := s.DB.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "date"}},
@@ -194,7 +194,7 @@ func (s *StatisticsService) upsertDayStatistics(date time.Time) {
 
 func (s *StatisticsService) upsertTenantDayStatistics(date time.Time, tenantID uint) {
 	stat := model.TenantDayStatistics{}
-	stat.Date = date
+	stat.Date = model.DateTime{Time: date}
 	stat.TenantID = &tenantID
 	stat.SubmitCount = 1
 	if err := s.DB.Clauses(clause.OnConflict{
@@ -209,7 +209,7 @@ func (s *StatisticsService) upsertTenantDayStatistics(date time.Time, tenantID u
 
 func (s *StatisticsService) upsertMerchantDayStatistics(date time.Time, merchantID uint) {
 	stat := model.MerchantDayStatistics{}
-	stat.Date = date
+	stat.Date = model.DateTime{Time: date}
 	stat.MerchantID = &merchantID
 	stat.SubmitCount = 1
 	if err := s.DB.Clauses(clause.OnConflict{
@@ -224,7 +224,7 @@ func (s *StatisticsService) upsertMerchantDayStatistics(date time.Time, merchant
 
 func (s *StatisticsService) upsertWriteOffDayStatistics(date time.Time, writeoffID uint) {
 	stat := model.WriteOffDayStatistics{}
-	stat.Date = date
+	stat.Date = model.DateTime{Time: date}
 	stat.WriteoffID = &writeoffID
 	stat.SubmitCount = 1
 	if err := s.DB.Clauses(clause.OnConflict{
@@ -239,7 +239,7 @@ func (s *StatisticsService) upsertWriteOffDayStatistics(date time.Time, writeoff
 
 func (s *StatisticsService) upsertPayChannelDayStatistics(date time.Time, tenantID *uint, merchantID *uint, writeoffID *uint, payChannelID uint) {
 	stat := model.PayChannelDayStatistics{}
-	stat.Date = date
+	stat.Date = model.DateTime{Time: date}
 	stat.PayChannelID = &payChannelID
 	stat.TenantID = tenantID
 	stat.MerchantID = merchantID

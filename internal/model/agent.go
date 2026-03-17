@@ -1,7 +1,6 @@
 package model
 
 import (
-	"time"
 
 	"gorm.io/gorm"
 )
@@ -21,8 +20,8 @@ type Tenant struct {
 	Version        int            `gorm:"default:0" json:"-"`                // 乐观锁
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -43,8 +42,8 @@ type Merchant struct {
 	Version        int            `gorm:"default:0" json:"-"`
 	Creator        *uint          `json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -69,8 +68,8 @@ type WriteOff struct {
 	Version          int            `gorm:"default:0" json:"-"`
 	Creator          *uint          `json:"creator"`
 	Modifier         *uint          `json:"modifier"`
-	CreateDatetime   time.Time      `gorm:"autoCreateTime" json:"create_datetime"`
-	UpdateDatetime   time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime   DateTime      `gorm:"autoCreateTime" json:"create_datetime"`
+	UpdateDatetime   DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -149,8 +148,8 @@ type TenantCashFlow struct {
 	Description    string             `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint              `gorm:"index" json:"creator"`
 	Modifier       *uint              `json:"modifier"`
-	CreateDatetime time.Time          `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time          `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime          `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime          `gorm:"autoUpdateTime" json:"update_datetime"`
 }
 
 func (TenantCashFlow) TableName() string {
@@ -172,8 +171,8 @@ type WriteoffCashFlow struct {
 	Description    string               `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint                `gorm:"index" json:"creator"`
 	Modifier       *uint                `json:"modifier"`
-	CreateDatetime time.Time            `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time            `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime            `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime            `gorm:"autoUpdateTime" json:"update_datetime"`
 }
 
 func (WriteoffCashFlow) TableName() string {
@@ -196,8 +195,8 @@ type WriteoffBrokerageFlow struct {
 	Description    string    `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint     `gorm:"index" json:"creator"`
 	Modifier       *uint     `json:"modifier"`
-	CreateDatetime time.Time `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime `gorm:"autoUpdateTime" json:"update_datetime"`
 }
 
 func (WriteoffBrokerageFlow) TableName() string {

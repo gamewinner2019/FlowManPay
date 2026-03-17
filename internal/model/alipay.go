@@ -44,8 +44,8 @@ type AlipayProduct struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 
 	// 多对多: 允许的支付通道
@@ -66,7 +66,7 @@ type AlipayProductDayStatistics struct {
 	SubmitCount  int       `gorm:"default:0" json:"submit_count"`
 	SuccessCount int       `gorm:"default:0" json:"success_count"`
 	SuccessMoney int64     `gorm:"default:0" json:"success_money"`
-	Date         time.Time `gorm:"type:date;index" json:"date"`
+	Date         DateTime `gorm:"type:date;index" json:"date"`
 	Version      int       `gorm:"default:0" json:"-"`
 }
 
@@ -118,7 +118,7 @@ type AlipayShenmaDayStatistics struct {
 	SubmitCount  int       `gorm:"default:0" json:"submit_count"`
 	SuccessCount int       `gorm:"default:0" json:"success_count"`
 	SuccessMoney int64     `gorm:"default:0" json:"success_money"`
-	Date         time.Time `gorm:"type:date;index" json:"date"`
+	Date         DateTime `gorm:"type:date;index" json:"date"`
 	Version      int       `gorm:"default:0" json:"-"`
 }
 
@@ -150,7 +150,7 @@ type AlipayPublicPoolDayStatistics struct {
 	SubmitCount  int       `gorm:"default:0" json:"submit_count"`
 	SuccessCount int       `gorm:"default:0" json:"success_count"`
 	SuccessMoney int64     `gorm:"default:0" json:"success_money"`
-	Date         time.Time `gorm:"type:date;index" json:"date"`
+	Date         DateTime `gorm:"type:date;index" json:"date"`
 	Version      int       `gorm:"default:0" json:"-"`
 }
 
@@ -176,8 +176,8 @@ type AlipaySplitUserGroup struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -210,7 +210,7 @@ type AlipaySplitUserGroupPreHistory struct {
 	NewMoney       int64     `gorm:"default:0" json:"new_money"`
 	Description    string    `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint     `gorm:"index" json:"creator"`
-	CreateDatetime time.Time `gorm:"autoCreateTime;index" json:"create_datetime"`
+	CreateDatetime DateTime `gorm:"autoCreateTime;index" json:"create_datetime"`
 }
 
 func (AlipaySplitUserGroupPreHistory) TableName() string {
@@ -223,7 +223,7 @@ func (AlipaySplitUserGroupPreHistory) TableName() string {
 type AlipaySplitUserGroupAddMoney struct {
 	ID       uint      `gorm:"primaryKey" json:"id"`
 	GroupID  uint      `gorm:"index" json:"group_id"`
-	Date     time.Time `gorm:"type:date" json:"date"`
+	Date     DateTime `gorm:"type:date" json:"date"`
 	AddMoney int64     `gorm:"default:0" json:"add_money"`
 	Version  int       `gorm:"default:0" json:"-"`
 }
@@ -249,8 +249,8 @@ type AlipaySplitUser struct {
 	Description    string               `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint                `gorm:"index" json:"creator"`
 	Modifier       *uint                `json:"modifier"`
-	CreateDatetime time.Time            `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time            `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime            `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime            `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt       `gorm:"index" json:"-"`
 }
 
@@ -266,7 +266,7 @@ type AlipaySplitUserFlow struct {
 	AlipayProductID uint      `gorm:"index" json:"alipay_product_id"`
 	AlipayUserID    uint      `gorm:"index" json:"alipay_user_id"`
 	Flow            int64     `gorm:"default:0" json:"flow"`
-	Date            time.Time `gorm:"type:date;index" json:"date"`
+	Date            DateTime `gorm:"type:date;index" json:"date"`
 	TenantID        uint      `gorm:"index" json:"tenant_id"`
 }
 
@@ -296,7 +296,7 @@ type CollectionDayFlow struct {
 	ID     uint      `gorm:"primaryKey" json:"id"`
 	UserID uint      `gorm:"index" json:"user_id"`
 	Flow   int64     `gorm:"default:0" json:"flow"`
-	Date   time.Time `gorm:"type:date;index" json:"date"`
+	Date   DateTime `gorm:"type:date;index" json:"date"`
 }
 
 func (CollectionDayFlow) TableName() string {
@@ -311,7 +311,7 @@ type AlipayTransferUserFlow struct {
 	AlipayUserID   uint      `gorm:"index" json:"alipay_user_id"`
 	AlipayProductID uint     `gorm:"index" json:"alipay_product_id"`
 	Flow           int64     `gorm:"default:0" json:"flow"`
-	Date           time.Time `gorm:"type:date;index" json:"date"`
+	Date           DateTime `gorm:"type:date;index" json:"date"`
 	Version        int       `gorm:"default:0" json:"-"`
 }
 
@@ -339,8 +339,8 @@ type SplitHistory struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -377,8 +377,8 @@ type AlipayTransferUser struct {
 	Description     string         `gorm:"size:255;default:''" json:"description"`
 	Creator         *uint          `gorm:"index" json:"creator"`
 	Modifier        *uint          `json:"modifier"`
-	CreateDatetime  time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime  time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime  DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime  DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt       gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -416,8 +416,8 @@ type TransferHistory struct {
 	Description     string              `gorm:"size:255;default:''" json:"description"`
 	Creator         *uint               `gorm:"index" json:"creator"`
 	Modifier        *uint               `json:"modifier"`
-	CreateDatetime  time.Time           `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime  time.Time           `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime  DateTime           `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime  DateTime           `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt       gorm.DeletedAt      `gorm:"index" json:"-"`
 }
 
@@ -452,8 +452,8 @@ type AlipayComplain struct {
 	Description      string         `gorm:"size:255;default:''" json:"description"`
 	Creator          *uint          `gorm:"index" json:"creator"`
 	Modifier         *uint          `json:"modifier"`
-	CreateDatetime   time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime   time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime   DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime   DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt        gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -478,8 +478,8 @@ type TenantCookie struct {
 	Version        int            `gorm:"default:0" json:"-"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -496,7 +496,7 @@ type TenantCookieDayStatistics struct {
 	SubmitCount  int       `gorm:"default:0" json:"submit_count"`
 	SuccessCount int       `gorm:"default:0" json:"success_count"`
 	SuccessMoney int64     `gorm:"default:0" json:"success_money"`
-	Date         time.Time `gorm:"type:date;index" json:"date"`
+	Date         DateTime `gorm:"type:date;index" json:"date"`
 	Version      int       `gorm:"default:0" json:"-"`
 }
 
@@ -517,8 +517,8 @@ type TenantCookieFile struct {
 	Status         bool           `gorm:"default:true" json:"status"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -540,8 +540,8 @@ type AlipayQuickTransfer struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -586,8 +586,8 @@ type QuickTransferHistory struct {
 	Description      string              `gorm:"size:255;default:''" json:"description"`
 	Creator          *uint               `gorm:"index" json:"creator"`
 	Modifier         *uint               `json:"modifier"`
-	CreateDatetime   time.Time           `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime   time.Time           `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime   DateTime           `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime   DateTime           `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt        gorm.DeletedAt      `gorm:"index" json:"-"`
 }
 
@@ -638,8 +638,8 @@ type AlipaySubProduct struct {
 	Description          string         `gorm:"size:255;default:''" json:"description"`
 	Creator              *uint          `gorm:"index" json:"creator"`
 	Modifier             *uint          `json:"modifier"`
-	CreateDatetime       time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime       time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime       DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime       DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt            gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -672,8 +672,8 @@ type AlipaySubProductRequestHistory struct {
 	Description          string         `gorm:"size:255;default:''" json:"description"`
 	Creator              *uint          `gorm:"index" json:"creator"`
 	Modifier             *uint          `json:"modifier"`
-	CreateDatetime       time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime       time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime       DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime       DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt            gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
