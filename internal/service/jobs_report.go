@@ -670,7 +670,7 @@ func (s *JobsService) CheckUserLogin() (int, error) {
 			msgLine += fmt.Sprintf("\n最后进单: %s", orderTime)
 		}
 
-		entityKey := fmt.Sprintf("%d", entityID)
+		entityKey := fmt.Sprintf("%s_%d", user.Role.Key, entityID)
 		resMsgs[entityKey] = msgLine
 
 		expireList = append(expireList, expireInfo{
@@ -737,7 +737,7 @@ func (s *JobsService) CheckUserLogin() (int, error) {
 			tenantTelegram = merchant.Parent.Telegram
 		}
 
-		entityKey := fmt.Sprintf("%d", e.EntityID)
+		entityKey := fmt.Sprintf("%s_%d", e.RoleID, e.EntityID)
 		msgContent := resMsgs[entityKey]
 
 		if _, ok := noti[tenantID]; !ok {
@@ -746,7 +746,7 @@ func (s *JobsService) CheckUserLogin() (int, error) {
 				"chat_id":  tenantTelegram,
 			}
 		} else {
-			noti[tenantID]["forwards"] = noti[tenantID]["forwards"].(string) + msgContent
+			noti[tenantID]["forwards"] = noti[tenantID]["forwards"].(string) + "\n" + msgContent
 		}
 	}
 
