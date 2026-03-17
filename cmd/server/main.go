@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -72,6 +73,9 @@ func main() {
 	// 初始化收银台 Handler
 	cashierHandler := handler.NewCashierHandler(db, rdb, "templates")
 
+	// 初始化订单API Handler（收银台启动/检查/商户查询/微信回调）
+	orderAPIHandler := handler.NewOrderAPIHandler(db, rdb)
+
 	// 注册内置 Hook
 	service.RegisterBuiltinHooks(db)
 
@@ -106,8 +110,25 @@ func main() {
 		api.POST("/pay/create/", orderHandler.CreateOrder)
 
 		// 支付回调通知接口（公开，由第三方支付平台回调）
-		api.POST("/pay/order/notify/:plugin_type/:product_id/", notifyHandler.AlipayNotify)
+		// 统一分发：alipay_ 前缀走 AlipayNotify，wechat_ 前缀走 WechatNotify
+		api.POST("/pay/order/notify/:plugin_type/:product_id/", func(c *gin.Context) {
+			pluginType := c.Param("plugin_type")
+			if strings.HasPrefix(pluginType, "wechat_") {
+				orderAPIHandler.WechatNotify(c)
+			} else {
+				notifyHandler.AlipayNotify(c)
+			}
+		})
 		api.GET("/pay/order/notify/test/", notifyHandler.NotifyTest)
+
+		// 收银台订单启动/检查（公开，通过Redis缓存认证）
+		api.GET("/pay/order/start/", orderAPIHandler.StartOrder)
+		api.POST("/pay/order/start/", orderAPIHandler.StartOrder)
+		api.POST("/pay/order/:raw_order_no/check/", orderAPIHandler.CheckOrder)
+
+		// 商户查询接口（公开，通过签名认证）
+		api.GET("/pay/order/query_order/", orderAPIHandler.QueryOrder)
+		api.POST("/pay/order/query_order/", orderAPIHandler.QueryOrder)
 
 		// Telegram Bot 回调（公开，由外部 Telegram Bot 调用）
 		api.POST("/business/tenant_yufu/bot/telegram/", businessHandler.TenantYufuBotTelegram)
@@ -247,7 +268,11 @@ func main() {
 			order.POST("/:id/refund/", orderHandler.Refund)
 			order.GET("/:id/logs/", orderHandler.QueryLogs)
 			order.POST("/:id/notify/", orderHandler.Notify)
+			order.POST("/:id/reorder/", orderAPIHandler.Reorder)
 		}
+
+		// 重试全部通知（需要认证）
+		auth.POST("/pay/order/retry/notify/all/", orderAPIHandler.RetryNotifyAll)
 
 		// ===== 支付配置管理 =====
 		payment := auth.Group("/payment")
