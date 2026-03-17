@@ -96,3 +96,153 @@ func (h *JobsHandler) AutoTransfer(c *gin.Context) {
 		"data": gin.H{"count": count},
 	})
 }
+
+// ReportTenantPre 租户商户日终报告（批量）
+// POST /api/jobs/report/tenant/pre/
+func (h *JobsHandler) ReportTenantPre(c *gin.Context) {
+	go h.JobsSvc.ReportTenantPre()
+	c.JSON(http.StatusOK, gin.H{
+		"code": 2000,
+		"msg":  "租户商户日终报告任务已提交",
+		"data": nil,
+	})
+}
+
+// ReportSplitPre 租户归集日终报告（批量）
+// POST /api/jobs/report/split/pre/
+func (h *JobsHandler) ReportSplitPre(c *gin.Context) {
+	go h.JobsSvc.ReportSplitPre()
+	c.JSON(http.StatusOK, gin.H{
+		"code": 2000,
+		"msg":  "租户归集日终报告任务已提交",
+		"data": nil,
+	})
+}
+
+// ReportMerchantPre 商户日终报告（批量）
+// POST /api/jobs/report/merchant/pre/
+func (h *JobsHandler) ReportMerchantPre(c *gin.Context) {
+	go h.JobsSvc.ReportMerchantPre()
+	c.JSON(http.StatusOK, gin.H{
+		"code": 2000,
+		"msg":  "商户日终报告任务已提交",
+		"data": nil,
+	})
+}
+
+// ReportWriteoffPre 核销日终报告（批量）
+// POST /api/jobs/report/writeoff/pre/
+func (h *JobsHandler) ReportWriteoffPre(c *gin.Context) {
+	go h.JobsSvc.ReportWriteoffPre()
+	c.JSON(http.StatusOK, gin.H{
+		"code": 2000,
+		"msg":  "核销日终报告任务已提交",
+		"data": nil,
+	})
+}
+
+// ReportTenantPreOne 单个租户商户日终报告
+// POST /api/jobs/report/tenant/pre/one/
+func (h *JobsHandler) ReportTenantPreOne(c *gin.Context) {
+	var req struct {
+		TenantID uint `json:"tenant_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 4000,
+			"msg":  "参数错误: tenant_id 必填",
+			"data": nil,
+		})
+		return
+	}
+	if err := h.JobsSvc.ReportTenantPreOne(req.TenantID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 4000,
+			"msg":  fmt.Sprintf("发送失败: %v", err),
+			"data": nil,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 2000,
+		"msg":  "发送成功",
+		"data": nil,
+	})
+}
+
+// ReportSplitPreOne 单个租户归集日终报告
+// POST /api/jobs/report/split/pre/one/
+func (h *JobsHandler) ReportSplitPreOne(c *gin.Context) {
+	var req struct {
+		TenantID uint `json:"tenant_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 4000,
+			"msg":  "参数错误: tenant_id 必填",
+			"data": nil,
+		})
+		return
+	}
+	if err := h.JobsSvc.ReportSplitPreOne(req.TenantID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 4000,
+			"msg":  fmt.Sprintf("发送失败: %v", err),
+			"data": nil,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 2000,
+		"msg":  "发送成功",
+		"data": nil,
+	})
+}
+
+// ReportMerchantPreOne 单个商户日终报告
+// POST /api/jobs/report/merchant/pre/one/
+func (h *JobsHandler) ReportMerchantPreOne(c *gin.Context) {
+	var req struct {
+		MerchantID uint `json:"merchant_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": 4000,
+			"msg":  "参数错误: merchant_id 必填",
+			"data": nil,
+		})
+		return
+	}
+	if err := h.JobsSvc.ReportMerchantPreOne(req.MerchantID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 4000,
+			"msg":  fmt.Sprintf("发送失败: %v", err),
+			"data": nil,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 2000,
+		"msg":  "发送成功",
+		"data": nil,
+	})
+}
+
+// CheckUserLogin 检查用户登录（自动关闭长期未登录用户）
+// POST /api/jobs/check/user/login/
+func (h *JobsHandler) CheckUserLogin(c *gin.Context) {
+	count, err := h.JobsSvc.CheckUserLogin()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"code": 4000,
+			"msg":  fmt.Sprintf("检查用户登录失败: %v", err),
+			"data": nil,
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"code": 2000,
+		"msg":  fmt.Sprintf("关闭了 %d 个用户", count),
+		"data": gin.H{"count": count},
+	})
+}
