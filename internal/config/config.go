@@ -19,6 +19,7 @@ type Config struct {
 	Redis    RedisConfig    `yaml:"redis"`
 	JWT      JWTConfig      `yaml:"jwt"`
 	System   SystemConfig   `yaml:"system"`
+	Telegram TelegramConfig `yaml:"telegram"`
 }
 
 type ServerConfig struct {
@@ -91,6 +92,12 @@ type SystemConfig struct {
 	DefaultPassword    string `yaml:"default_password"`
 	Timezone           string `yaml:"timezone"`
 	LoginNoCaptchaAuth bool   `yaml:"login_no_captcha_auth"`
+}
+
+type TelegramConfig struct {
+	BotHost      string `yaml:"bot_host"`
+	ForwardsPath string `yaml:"forwards_path"`
+	BalanceMsg   string `yaml:"balance_msg"`
 }
 
 // Load reads the config file and returns the Config struct.

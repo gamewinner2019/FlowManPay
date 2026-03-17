@@ -395,9 +395,9 @@ func (s *OrderService) CheckChannel(ctx *OrderCreateCtx, channelID uint) error {
 		}
 	}
 
-	// 检查金额不能为0
-	if ctx.Money == 0 {
-		return NewOrderProcessingError(7312, "金额不能为0")
+	// 检查金额不能为0或负数
+	if ctx.Money <= 0 {
+		return NewOrderProcessingError(7312, "金额必须大于0")
 	}
 
 	// 检查单笔金额范围
