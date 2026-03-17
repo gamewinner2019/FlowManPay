@@ -386,7 +386,7 @@ func (h *CashierHandler) AlipayUID(c *gin.Context) {
 	data := templateData{
 		OrderNo: orderNo,
 		Money:   fmt.Sprintf("%.2f", moneyFloat),
-		Tm:      time.Now().Unix() + 600, // 10分钟倒计时
+		Tm:      time.Now().UnixMilli() + 600000, // 10分钟倒计时(毫秒)
 	}
 
 	if sdkStr != "" {

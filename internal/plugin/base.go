@@ -6,6 +6,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -409,6 +410,9 @@ func toInt(v interface{}) int {
 		return int(val)
 	case float64:
 		return int(val)
+	case string:
+		n, _ := strconv.Atoi(val)
+		return n
 	case nil:
 		return 0
 	default:

@@ -361,7 +361,7 @@
     var payUrl = "";
     var domain = window.location.host;
     var protocol = window.location.protocol;
-    var queryUrl = protocol + "//" + domain + "{{.CheckURL}}";
+    var queryUrl = "{{.CheckURL}}";
 
     function queryStatus(pay_url) {
         $.post(

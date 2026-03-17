@@ -667,7 +667,7 @@ button.toast-close-button {
     var payUrl = "";
     var domain = window.location.host;
     var protocol = window.location.protocol;
-    var queryUrl = protocol + "//" + domain + "{{.CheckURL}}";
+    var queryUrl = "{{.CheckURL}}";
     var clipboardxin = new Clipboard('.copybtn');
     clipboardxin.on("success", function (e) {
         toastr.success('复制成功')
