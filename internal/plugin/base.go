@@ -463,10 +463,14 @@ func PluginCreateOrder(db *gorm.DB, rdb interface{}, orderNo string, rawOrderNo 
 	args := CreateOrderArgs{
 		RawOrderNo: rawOrderNo,
 		OrderNo:    orderNo,
+		OutOrderNo: order.OutOrderNo,
 		IP:         ip,
 		Money:      order.Money,
 	}
 
+	if order.PayChannelID != nil {
+		args.ChannelID = int(*order.PayChannelID)
+	}
 	if detail.PluginID != nil {
 		args.PluginID = int(*detail.PluginID)
 	}
