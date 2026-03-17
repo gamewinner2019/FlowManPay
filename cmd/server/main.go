@@ -53,6 +53,17 @@ func main() {
 	banHandler := handler.NewBanHandler(db)
 	rechargeHandler := handler.NewRechargeHandler(db)
 
+	// 初始化Phase4 Handler
+	dataAnalysisHandler := handler.NewDataAnalysisHandler(db)
+	splitHandler := handler.NewSplitHandler(db)
+
+	// 注册内置 Hook
+	service.RegisterBuiltinHooks(db)
+
+	// 启动定时任务
+	jobsSvc := service.NewJobsService(db)
+	go jobsSvc.Start()
+
 	// 创建Gin引擎
 	r := gin.Default()
 
@@ -259,6 +270,61 @@ func main() {
 		{
 			recharge.GET("/", rechargeHandler.List)
 			recharge.POST("/", rechargeHandler.Create)
+		}
+
+		// ===== 数据分析/统计 =====
+		statistics := auth.Group("/statistics")
+		{
+			statistics.GET("/dashboard/", dataAnalysisHandler.Dashboard)
+			statistics.GET("/day/", dataAnalysisHandler.DayStatisticsList)
+			statistics.GET("/day/export/", dataAnalysisHandler.DayStatisticsExport)
+			statistics.GET("/pay_channel/", dataAnalysisHandler.PayChannelStatsList)
+			statistics.GET("/split_group/", dataAnalysisHandler.SplitGroupStatsList)
+			statistics.GET("/collection/", dataAnalysisHandler.CollectionStatsList)
+			statistics.GET("/order_success_rate/", dataAnalysisHandler.OrderSuccessRate)
+		}
+
+		// ===== 分账管理 =====
+		split := auth.Group("/split")
+		{
+			// 分账用户组
+			groups := split.Group("/groups")
+			{
+				groups.GET("/", splitHandler.GroupList)
+				groups.POST("/", splitHandler.GroupCreate)
+				groups.GET("/:id/", splitHandler.GroupRetrieve)
+				groups.PUT("/:id/", splitHandler.GroupUpdate)
+				groups.DELETE("/:id/", splitHandler.GroupDelete)
+				groups.POST("/:id/pre_pay/", splitHandler.GroupPrePay)
+				groups.GET("/:id/pre_pay_history/", splitHandler.GroupPrePayHistory)
+				groups.POST("/:id/add_money/", splitHandler.GroupAddMoney)
+			}
+
+			// 分账用户
+			users := split.Group("/users")
+			{
+				users.GET("/", splitHandler.UserList)
+				users.POST("/", splitHandler.UserCreate)
+				users.PUT("/:id/", splitHandler.UserUpdate)
+				users.DELETE("/:id/", splitHandler.UserDelete)
+				users.GET("/:id/flow/", splitHandler.UserFlowList)
+			}
+
+			// 分账历史
+			split.GET("/history/", splitHandler.SplitHistoryList)
+		}
+
+		// ===== 归集管理 =====
+		collection := auth.Group("/collection")
+		{
+			collUsers := collection.Group("/users")
+			{
+				collUsers.GET("/", splitHandler.CollectionUserList)
+				collUsers.POST("/", splitHandler.CollectionUserCreate)
+				collUsers.PUT("/:id/", splitHandler.CollectionUserUpdate)
+				collUsers.DELETE("/:id/", splitHandler.CollectionUserDelete)
+				collUsers.GET("/:id/flow/", splitHandler.CollectionFlowList)
+			}
 		}
 	}
 

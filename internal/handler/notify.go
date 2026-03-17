@@ -128,13 +128,17 @@ func (h *NotifyHandler) AlipayNotify(c *gin.Context) {
 		if responder.CheckNotifySuccess(dataMap) {
 			// 通知成功，触发订单完成流程
 			go h.successOrder(orderNo, payTime, pluginType)
+			c.String(http.StatusOK, "success")
+		} else {
+			// 通知状态非成功（如WAIT_BUYER_PAY），返回fail让支付宝重试
+			log.Printf("[接收通知] %s 通知状态非成功, 订单号: %s", pluginType, orderNo)
+			c.String(http.StatusOK, "fail")
 		}
 	} else {
 		// 没有对应插件，默认走成功流程
 		go h.successOrder(orderNo, payTime, pluginType)
+		c.String(http.StatusOK, "success")
 	}
-
-	c.String(http.StatusOK, "success")
 }
 
 // successOrder 订单完成流程
@@ -169,11 +173,18 @@ func (h *NotifyHandler) successOrder(orderNo string, payTimeStr string, pluginTy
 
 	orderBefore := int(order.OrderStatus)
 
-	// 更新订单状态为 SUCCESS_PRE（待通知商户）
-	h.DB.Model(&order).Updates(map[string]interface{}{
-		"order_status": model.OrderStatusSuccessPre,
-		"pay_datetime": payTime,
-	})
+	// 原子更新订单状态为 SUCCESS_PRE（防止并发重复处理）
+	result := h.DB.Model(&model.Order{}).Where("order_no = ? AND order_status IN ?", orderNo,
+		[]model.OrderStatus{model.OrderStatusInProduction, model.OrderStatusWaitPay}).
+		Updates(map[string]interface{}{
+			"order_status": model.OrderStatusSuccessPre,
+			"pay_datetime": payTime,
+		})
+	if result.RowsAffected == 0 {
+		log.Printf("[通知成功] 订单已被其他进程处理, 订单号: %s", orderNo)
+		h.triggerMerchantNotify(orderNo)
+		return
+	}
 
 	log.Printf("[通知成功] 订单完成, 订单号: %s", orderNo)
 
@@ -287,10 +298,18 @@ func SuccessOrderByQuery(db *gorm.DB, orderNo string) {
 	orderBefore := int(order.OrderStatus)
 	now := time.Now()
 
-	db.Model(&order).Updates(map[string]interface{}{
-		"order_status": model.OrderStatusSuccessPre,
-		"pay_datetime": now,
-	})
+	// 原子更新订单状态（防止并发重复处理）
+	result := db.Model(&model.Order{}).Where("order_no = ? AND order_status NOT IN ?", orderNo,
+		[]model.OrderStatus{model.OrderStatusSuccessPre, model.OrderStatusSuccess}).
+		Updates(map[string]interface{}{
+			"order_status": model.OrderStatusSuccessPre,
+			"pay_datetime": now,
+		})
+	if result.RowsAffected == 0 {
+		log.Printf("[查询完成] 订单已被其他进程处理, 订单号: %s", orderNo)
+		triggerMerchantNotifyStatic(db, orderNo)
+		return
+	}
 
 	log.Printf("[查询完成] 订单完成, 订单号: %s", orderNo)
 

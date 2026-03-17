@@ -157,17 +157,21 @@ func (AlipayPublicPoolDayStatistics) TableName() string {
 	return TablePrefix + "alipay_public_pool_day_statistics"
 }
 
-// ===== AlipaySplitUser 支付宝分账用户 =====
+// ===== AlipaySplitUserGroup 支付宝分账用户组 =====
 
-// AlipaySplitUser 支付宝分账用户
-type AlipaySplitUser struct {
+// AlipaySplitUserGroup 支付宝分账用户组
+type AlipaySplitUserGroup struct {
 	ID             uint           `gorm:"primaryKey" json:"id"`
 	Name           string         `gorm:"size:128" json:"name"`
-	UID            string         `gorm:"size:128" json:"uid"`
-	ProductID      uint           `gorm:"index" json:"product_id"`
-	Product        *AlipayProduct `gorm:"foreignKey:ProductID" json:"product,omitempty"`
+	Telegram       string         `gorm:"size:256" json:"telegram"`
+	PreStatus      bool           `gorm:"default:false" json:"pre_status"`              // 预付模式
 	Status         bool           `gorm:"default:true" json:"status"`
-	LimitMoney     int            `gorm:"default:0" json:"limit_money"`
+	TenantID       uint           `gorm:"index" json:"tenant_id"`
+	Tenant         *Tenant        `gorm:"foreignKey:TenantID" json:"tenant,omitempty"`
+	Weight         int            `gorm:"default:1" json:"weight"`
+	Tax            float64        `gorm:"type:decimal(5,2);default:0" json:"tax"`       // 费率
+	WriteoffID     *uint          `gorm:"index" json:"writeoff_id"`
+	Writeoff       *WriteOff      `gorm:"foreignKey:WriteoffID" json:"writeoff,omitempty"`
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
@@ -176,8 +180,126 @@ type AlipaySplitUser struct {
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
+func (AlipaySplitUserGroup) TableName() string {
+	return TablePrefix + "alipay_split_user_group"
+}
+
+// ===== AlipaySplitUserGroupPre 分账用户组预付 =====
+
+// AlipaySplitUserGroupPre 分账用户组预付
+type AlipaySplitUserGroupPre struct {
+	ID      uint  `gorm:"primaryKey" json:"id"`
+	GroupID uint  `gorm:"uniqueIndex" json:"group_id"`
+	PrePay  int64 `gorm:"default:0" json:"pre_pay"`
+	Version int   `gorm:"default:0" json:"-"`
+}
+
+func (AlipaySplitUserGroupPre) TableName() string {
+	return TablePrefix + "alipay_split_user_group_pre"
+}
+
+// ===== AlipaySplitUserGroupPreHistory 分账用户组预付历史 =====
+
+// AlipaySplitUserGroupPreHistory 分账用户组预付历史
+type AlipaySplitUserGroupPreHistory struct {
+	ID             uint      `gorm:"primaryKey" json:"id"`
+	GroupID        uint      `gorm:"index" json:"group_id"`
+	ChangeMoney    int64     `gorm:"default:0" json:"change_money"`
+	OldMoney       int64     `gorm:"default:0" json:"old_money"`
+	NewMoney       int64     `gorm:"default:0" json:"new_money"`
+	Description    string    `gorm:"size:255;default:''" json:"description"`
+	Creator        *uint     `gorm:"index" json:"creator"`
+	CreateDatetime time.Time `gorm:"autoCreateTime;index" json:"create_datetime"`
+}
+
+func (AlipaySplitUserGroupPreHistory) TableName() string {
+	return TablePrefix + "alipay_split_user_group_prehistory"
+}
+
+// ===== AlipaySplitUserGroupAddMoney 分账组打款记录 =====
+
+// AlipaySplitUserGroupAddMoney 分账组打款记录
+type AlipaySplitUserGroupAddMoney struct {
+	ID       uint      `gorm:"primaryKey" json:"id"`
+	GroupID  uint      `gorm:"index" json:"group_id"`
+	Date     time.Time `gorm:"type:date" json:"date"`
+	AddMoney int64     `gorm:"default:0" json:"add_money"`
+	Version  int       `gorm:"default:0" json:"-"`
+}
+
+func (AlipaySplitUserGroupAddMoney) TableName() string {
+	return TablePrefix + "alipay_split_user_group_add_money"
+}
+
+// ===== AlipaySplitUser 支付宝分账用户 =====
+
+// AlipaySplitUser 支付宝分账用户
+type AlipaySplitUser struct {
+	ID             uint                 `gorm:"primaryKey" json:"id"`
+	UsernameType   int                  `gorm:"default:0" json:"username_type"`            // 0=UID 1=账户 2=微信商户号
+	Username       string               `gorm:"size:255" json:"username"`
+	Name           string               `gorm:"size:255" json:"name"`
+	Status         bool                 `gorm:"default:true" json:"status"`
+	LimitMoney     int64                `gorm:"default:0" json:"limit_money"`
+	GroupID        uint                 `gorm:"index" json:"group_id"`
+	Group          *AlipaySplitUserGroup `gorm:"foreignKey:GroupID" json:"group,omitempty"`
+	Percentage     float64              `gorm:"type:decimal(5,2);default:100" json:"percentage"`
+	Risk           int                  `gorm:"default:0" json:"risk"`
+	Description    string               `gorm:"size:255;default:''" json:"description"`
+	Creator        *uint                `gorm:"index" json:"creator"`
+	Modifier       *uint                `json:"modifier"`
+	CreateDatetime time.Time            `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime time.Time            `gorm:"autoUpdateTime" json:"update_datetime"`
+	DeletedAt      gorm.DeletedAt       `gorm:"index" json:"-"`
+}
+
 func (AlipaySplitUser) TableName() string {
 	return TablePrefix + "alipay_split_user"
+}
+
+// ===== AlipaySplitUserFlow 分账用户日流水 =====
+
+// AlipaySplitUserFlow 分账用户日流水
+type AlipaySplitUserFlow struct {
+	ID              uint      `gorm:"primaryKey" json:"id"`
+	AlipayProductID uint      `gorm:"index" json:"alipay_product_id"`
+	AlipayUserID    uint      `gorm:"index" json:"alipay_user_id"`
+	Flow            int64     `gorm:"default:0" json:"flow"`
+	Date            time.Time `gorm:"type:date;index" json:"date"`
+	TenantID        uint      `gorm:"index" json:"tenant_id"`
+}
+
+func (AlipaySplitUserFlow) TableName() string {
+	return TablePrefix + "alipay_split_user_flow"
+}
+
+// ===== CollectionUser 归集用户 =====
+
+// CollectionUser 归集用户
+type CollectionUser struct {
+	ID       uint   `gorm:"primaryKey" json:"id"`
+	Username string `gorm:"size:255" json:"username"`
+	Name     string `gorm:"size:255" json:"name"`
+	Remarks  string `gorm:"type:text" json:"remarks"`
+	TenantID uint   `gorm:"index" json:"tenant_id"`
+}
+
+func (CollectionUser) TableName() string {
+	return TablePrefix + "collection_user"
+}
+
+// ===== CollectionDayFlow 归集日流水 =====
+
+// CollectionDayFlow 归集日流水
+type CollectionDayFlow struct {
+	ID     uint      `gorm:"primaryKey" json:"id"`
+	UserID uint      `gorm:"index" json:"user_id"`
+	Flow   int64     `gorm:"default:0" json:"flow"`
+	Date   time.Time `gorm:"type:date;index" json:"date"`
+}
+
+func (CollectionDayFlow) TableName() string {
+	return TablePrefix + "collection_day_flow"
 }
 
 // ===== AlipayTransferUserFlow 支付宝用户流水 =====

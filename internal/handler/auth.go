@@ -38,10 +38,14 @@ func NewAuthHandler(db *gorm.DB, rdb *redis.Client) *AuthHandler {
 func (h *AuthHandler) Captcha(c *gin.Context) {
 	data := gin.H{}
 
-	// 检查是否开启验证码
+	// 检查是否开启验证码（通过父子关系查询：parent key="base", child key="captcha_state"）
 	var captchaConfig model.SystemConfig
 	captchaEnabled := true
-	if err := h.AuthService.DB.Where("`key` = ?", "base.captcha_state").First(&captchaConfig).Error; err == nil {
+	configTable := model.SystemConfig{}.TableName()
+	if err := h.AuthService.DB.Table(configTable).
+		Joins("JOIN "+configTable+" AS parent ON parent.id = "+configTable+".parent_id").
+		Where("parent.`key` = ? AND "+configTable+".`key` = ?", "base", "captcha_state").
+		First(&captchaConfig).Error; err == nil {
 		if captchaConfig.Value != nil && (*captchaConfig.Value == "false" || *captchaConfig.Value == "0") {
 			captchaEnabled = false
 		}
@@ -81,11 +85,15 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	// 验证码校验(如果开启)
+	// 验证码校验(如果开启，通过父子关系查询)
 	captchaRequired := true
-	var captchaConfig model.SystemConfig
-	if err := h.AuthService.DB.Where("`key` = ?", "base.captcha_state").First(&captchaConfig).Error; err == nil {
-		if captchaConfig.Value != nil && (*captchaConfig.Value == "false" || *captchaConfig.Value == "0") {
+	var captchaConfig2 model.SystemConfig
+	configTable := model.SystemConfig{}.TableName()
+	if err := h.AuthService.DB.Table(configTable).
+		Joins("JOIN "+configTable+" AS parent ON parent.id = "+configTable+".parent_id").
+		Where("parent.`key` = ? AND "+configTable+".`key` = ?", "base", "captcha_state").
+		First(&captchaConfig2).Error; err == nil {
+		if captchaConfig2.Value != nil && (*captchaConfig2.Value == "false" || *captchaConfig2.Value == "0") {
 			captchaRequired = false
 		}
 	}
