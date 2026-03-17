@@ -37,14 +37,14 @@ type LoginRequest struct {
 	GoogleCode string `json:"googleCode"`
 }
 
-// LoginResponse represents the login response
+// LoginResponse represents the login response (matches Django LoginSerializer)
 type LoginResponse struct {
-	Access   string `json:"access"`
-	Refresh  string `json:"refresh"`
-	UserID   uint   `json:"user_id"`
-	Name     string `json:"name"`
-	RoleKey  string `json:"role_key"`
-	Username string `json:"username"`
+	Access  string `json:"access"`
+	Refresh string `json:"refresh"`
+	UserID  uint   `json:"userId"`
+	Name    string `json:"name"`
+	RoleKey string `json:"role_key"`
+	Avatar  string `json:"avatar"`
 }
 
 // Login performs user authentication with all checks.
@@ -106,17 +106,17 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 			Username:       user.Username,
 			LoginType:      1,
 			Creator:        &user.ID,
-			CreateDatetime: now,
+			CreateDatetime: model.DateTime{Time: now},
 		})
 	}
 
 	return &LoginResponse{
-		Access:   accessToken,
-		Refresh:  refreshToken,
-		UserID:   user.ID,
-		Name:     user.Name,
-		RoleKey:  user.Role.Key,
-		Username: user.Username,
+		Access:  accessToken,
+		Refresh: refreshToken,
+		UserID:  user.ID,
+		Name:    user.Name,
+		RoleKey: user.Role.Key,
+		Avatar:  user.Avatar,
 	}, nil
 }
 

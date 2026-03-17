@@ -40,7 +40,7 @@ type Order struct {
 	MerchantID     *uint          `gorm:"index" json:"merchant_id"`                    // 商户
 	Merchant       *Merchant      `gorm:"foreignKey:MerchantID" json:"merchant,omitempty"`
 	Tax            int            `gorm:"default:0" json:"tax"`                        // 系统手续费(分)
-	PayDatetime    *time.Time     `json:"pay_datetime"`                                // 支付时间
+	PayDatetime    *DateTime     `json:"pay_datetime"`                                // 支付时间
 	ProductName    string         `gorm:"size:255" json:"product_name"`                // 产品名称
 	ReqExtra       string         `gorm:"type:text" json:"req_extra"`                  // 请求额外参数
 	Compatible     OrderCompatible `gorm:"default:0" json:"compatible"`                // 兼容模式
@@ -49,8 +49,8 @@ type Order struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -92,8 +92,8 @@ type OrderDetail struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -118,8 +118,8 @@ type OrderDeviceDetails struct {
 	Description       string         `gorm:"size:255;default:''" json:"description"`
 	Creator           *uint          `gorm:"index" json:"creator"`
 	Modifier          *uint          `json:"modifier"`
-	CreateDatetime    time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime    time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime    DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime    DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -137,8 +137,8 @@ type ReOrder struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -157,8 +157,8 @@ type OrderLog struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -182,8 +182,8 @@ type QueryLog struct {
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 

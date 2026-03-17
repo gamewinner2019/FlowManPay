@@ -107,11 +107,11 @@ func (h *AlipaySubRequestHandler) List(c *gin.Context) {
 
 	// 构建响应，附加 history 信息
 	type subProductResp struct {
-		ExternalID   string      `json:"external_id"`
-		Name         *string     `json:"name"`
-		MerchantType *string     `json:"merchant_type"`
-		CreateTime   time.Time   `json:"create_datetime"`
-		UpdateTime   time.Time   `json:"update_datetime"`
+		ExternalID   string         `json:"external_id"`
+		Name         *string        `json:"name"`
+		MerchantType *string        `json:"merchant_type"`
+		CreateTime   model.DateTime `json:"create_datetime"`
+		UpdateTime   model.DateTime `json:"update_datetime"`
 		Status       string      `json:"status"`
 		WriteoffName string      `json:"writeoff_name"`
 		TenantName   string      `json:"tenant_name,omitempty"`

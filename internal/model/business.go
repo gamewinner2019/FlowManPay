@@ -24,8 +24,8 @@ type MerchantPreHistory struct {
 	Version        int            `gorm:"default:0" json:"-"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -50,8 +50,8 @@ type WriteoffPreHistory struct {
 	Version        int            `gorm:"default:0" json:"-"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -93,12 +93,12 @@ type PhoneProduct struct {
 	OrderID        *string        `gorm:"size:30;index" json:"order_id"`
 	Order          *Order         `gorm:"foreignKey:OrderID" json:"order,omitempty"`
 	OrderStatus    int            `gorm:"default:0" json:"order_status"`  // 0=等待充值...
-	FinishDatetime *time.Time     `json:"finish_datetime"`
+	FinishDatetime *DateTime     `json:"finish_datetime"`
 	Version        int            `gorm:"default:0" json:"-"`
 	Creator        *uint          `gorm:"index" json:"creator"`
 	Modifier       *uint          `json:"modifier"`
-	CreateDatetime time.Time      `gorm:"autoCreateTime;index" json:"create_datetime"`
-	UpdateDatetime time.Time      `gorm:"autoUpdateTime" json:"update_datetime"`
+	CreateDatetime DateTime      `gorm:"autoCreateTime;index" json:"create_datetime"`
+	UpdateDatetime DateTime      `gorm:"autoUpdateTime" json:"update_datetime"`
 	DeletedAt      gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
@@ -122,7 +122,7 @@ type PhoneOrderFlow struct {
 	Flow       int64     `gorm:"default:0" json:"flow"`
 	Refund     int64     `gorm:"default:0" json:"refund"`
 	ChargeType int       `gorm:"default:0" json:"charge_type"` // 0=快充 1=慢充
-	Date       time.Time `gorm:"type:date;index" json:"date"`
+	Date       DateTime `gorm:"type:date;index" json:"date"`
 	Version    int       `gorm:"default:0" json:"-"`
 }
 

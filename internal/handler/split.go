@@ -305,7 +305,7 @@ func (h *SplitHandler) GroupAddMoney(c *gin.Context) {
 	if err != nil {
 		record = model.AlipaySplitUserGroupAddMoney{
 			GroupID:  uint(id),
-			Date:     date,
+			Date:     model.DateTime{Time: date},
 			AddMoney: req.AddMoney,
 		}
 		h.DB.Create(&record)

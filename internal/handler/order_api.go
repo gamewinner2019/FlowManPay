@@ -586,10 +586,9 @@ func (h *OrderAPIHandler) Reorder(c *gin.Context) {
 // errorResponseWithData 带数据的错误响应
 func (h *OrderAPIHandler) errorResponseWithData(c *gin.Context, msg string, code int, data interface{}) {
 	c.JSON(http.StatusOK, response.Response{
-		Code:    code,
-		Data:    data,
-		Msg:     msg,
-		Success: false,
+		Code: code,
+		Data: data,
+		Msg:  msg,
 	})
 }
 

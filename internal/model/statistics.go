@@ -1,6 +1,6 @@
 package model
 
-import "time"
+// statistics models
 
 // ===== BaseDayStatistics 日统计基础字段 =====
 
@@ -15,7 +15,7 @@ type baseDayStatisticsFields struct {
 	IOSCount     int       `gorm:"default:0" json:"ios_count"`        // 苹果订单数
 	PCCount      int       `gorm:"default:0" json:"pc_count"`         // PC订单数
 	TotalTax     int64     `gorm:"default:0" json:"total_tax"`        // 总利润(分)
-	Date         time.Time `gorm:"type:date" json:"date"`             // 统计日期
+	Date         DateTime `gorm:"type:date" json:"date"`             // 统计日期
 	Version      int       `gorm:"default:0" json:"-"`                // 乐观锁
 }
 
