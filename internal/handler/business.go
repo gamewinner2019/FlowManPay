@@ -182,52 +182,33 @@ func (h *BusinessHandler) MerchantPreHistoryStatistics(c *gin.Context) {
 	today := time.Now().Format("2006-01-02")
 	yesterday := time.Now().AddDate(0, 0, -1).Format("2006-01-02")
 
-	query := h.DB.Model(&model.MerchantPreHistory{})
-
-	// RBAC 过滤
-	if currentUser != nil {
-		switch currentUser.Role.Key {
-		case model.RoleKeyMerchant:
-			var merchant model.Merchant
-			if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&merchant).Error; err == nil {
-				query = query.Where("merchant_id = ?", merchant.ID)
-			}
-		case model.RoleKeyTenant:
-			var tenant model.Tenant
-			if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&tenant).Error; err == nil {
-				query = query.Joins("JOIN "+model.Merchant{}.TableName()+" m ON m.id = "+model.MerchantPreHistory{}.TableName()+".merchant_id").
-					Where("m.parent_id = ?", tenant.ID)
+	// baseQuery builds a fresh RBAC-filtered query each time to avoid GORM session reuse issues
+	baseQuery := func() *gorm.DB {
+		q := h.DB.Model(&model.MerchantPreHistory{})
+		if currentUser != nil {
+			switch currentUser.Role.Key {
+			case model.RoleKeyMerchant:
+				var merchant model.Merchant
+				if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&merchant).Error; err == nil {
+					q = q.Where("merchant_id = ?", merchant.ID)
+				}
+			case model.RoleKeyTenant:
+				var tenant model.Tenant
+				if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&tenant).Error; err == nil {
+					q = q.Joins("JOIN "+model.Merchant{}.TableName()+" m ON m.id = "+model.MerchantPreHistory{}.TableName()+".merchant_id").
+						Where("m.parent_id = ?", tenant.ID)
+				}
 			}
 		}
-	}
-
-	if merchantID := c.Query("merchant"); merchantID != "" {
-		query = query.Where(model.MerchantPreHistory{}.TableName()+".merchant_id = ?", merchantID)
+		if merchantID := c.Query("merchant"); merchantID != "" {
+			q = q.Where(model.MerchantPreHistory{}.TableName()+".merchant_id = ?", merchantID)
+		}
+		return q
 	}
 
 	var todayMoney, yesterdayMoney int64
-	query.Where("DATE(create_datetime) = ?", today).Select("COALESCE(SUM(pre_pay), 0)").Scan(&todayMoney)
-
-	query2 := h.DB.Model(&model.MerchantPreHistory{})
-	if currentUser != nil {
-		switch currentUser.Role.Key {
-		case model.RoleKeyMerchant:
-			var merchant model.Merchant
-			if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&merchant).Error; err == nil {
-				query2 = query2.Where("merchant_id = ?", merchant.ID)
-			}
-		case model.RoleKeyTenant:
-			var tenant model.Tenant
-			if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&tenant).Error; err == nil {
-				query2 = query2.Joins("JOIN "+model.Merchant{}.TableName()+" m ON m.id = "+model.MerchantPreHistory{}.TableName()+".merchant_id").
-					Where("m.parent_id = ?", tenant.ID)
-			}
-		}
-	}
-	if merchantID := c.Query("merchant"); merchantID != "" {
-		query2 = query2.Where(model.MerchantPreHistory{}.TableName()+".merchant_id = ?", merchantID)
-	}
-	query2.Where("DATE(create_datetime) = ?", yesterday).Select("COALESCE(SUM(pre_pay), 0)").Scan(&yesterdayMoney)
+	baseQuery().Where("DATE(create_datetime) = ?", today).Select("COALESCE(SUM(pre_pay), 0)").Scan(&todayMoney)
+	baseQuery().Where("DATE(create_datetime) = ?", yesterday).Select("COALESCE(SUM(pre_pay), 0)").Scan(&yesterdayMoney)
 
 	// 获取总预付
 	var totalPre int64
@@ -236,7 +217,7 @@ func (h *BusinessHandler) MerchantPreHistoryStatistics(c *gin.Context) {
 		if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&merchant).Error; err == nil {
 			var pre model.MerchantPre
 			if err := h.DB.Where("merchant_id = ?", merchant.ID).First(&pre).Error; err == nil {
-				totalPre = int64(pre.ID) // MerchantPre doesn't have pre_pay field, use ID as placeholder
+				totalPre = pre.PrePay
 			}
 		}
 	} else if merchantID := c.Query("merchant"); merchantID != "" {
@@ -503,7 +484,7 @@ func (h *BusinessHandler) WriteoffPreHistoryStatistics(c *gin.Context) {
 		if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&writeoff).Error; err == nil {
 			var pre model.WriteoffPre
 			if err := h.DB.Where("writeoff_id = ?", writeoff.ID).First(&pre).Error; err == nil {
-				totalPre = int64(pre.ID)
+				totalPre = pre.PrePay
 			}
 		}
 	} else if writeoffID := c.Query("writeoff"); writeoffID != "" {
@@ -1103,11 +1084,6 @@ func (h *BusinessHandler) CollectionUserDayStatisticsList(c *gin.Context) {
 		}
 
 		// 计算今日/昨日/总流水
-		flowQuery := h.DB.Model(&model.CollectionDayFlow{}).Where("user_id = ?", user.ID)
-		for k, v := range dateFilter {
-			flowQuery = flowQuery.Where(k+"?", v)
-		}
-
 		var todayFlow, yesterdayFlow, totalFlow int64
 		h.DB.Model(&model.CollectionDayFlow{}).Where("user_id = ? AND date = ?", user.ID, today).
 			Select("COALESCE(SUM(flow), 0)").Scan(&todayFlow)
@@ -1116,7 +1092,7 @@ func (h *BusinessHandler) CollectionUserDayStatisticsList(c *gin.Context) {
 
 		totalFlowQuery := h.DB.Model(&model.CollectionDayFlow{}).Where("user_id = ?", user.ID)
 		for k, v := range dateFilter {
-			totalFlowQuery = totalFlowQuery.Where(k+"?", v)
+			totalFlowQuery = totalFlowQuery.Where(k+" ?", v)
 		}
 		totalFlowQuery.Select("COALESCE(SUM(flow), 0)").Scan(&totalFlow)
 
@@ -1595,8 +1571,25 @@ func (h *BusinessHandler) TenantCookieCount(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 
+	// residue query must apply the same RBAC + parameter filters as the total query
+	residueQuery := h.DB.Model(&model.TenantCookie{}).Where("status = ?", true)
+	if currentUser != nil && currentUser.Role.Key == model.RoleKeyTenant {
+		var tenant model.Tenant
+		if err := h.DB.Where("system_user_id = ?", currentUser.ID).First(&tenant).Error; err == nil {
+			residueQuery = residueQuery.Where("tenant_id = ?", tenant.ID)
+		}
+	}
+	if pluginID := c.Query("plugin"); pluginID != "" {
+		residueQuery = residueQuery.Where("plugin_id = ?", pluginID)
+	}
+	if tenantID := c.Query("tenant"); tenantID != "" {
+		residueQuery = residueQuery.Where("tenant_id = ?", tenantID)
+	}
+	if fileID := c.Query("file_id"); fileID != "" {
+		residueQuery = residueQuery.Where("file_id = ?", fileID)
+	}
 	var residue int64
-	h.DB.Model(&model.TenantCookie{}).Where("status = ?", true).Count(&residue)
+	residueQuery.Count(&residue)
 
 	response.DetailResponse(c, gin.H{
 		"total":   total,

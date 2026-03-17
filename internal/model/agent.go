@@ -113,9 +113,10 @@ func (WriteoffBrokerage) TableName() string {
 
 // MerchantPre 商户预付
 type MerchantPre struct {
-	ID         uint `gorm:"primaryKey" json:"id"`
-	MerchantID uint `gorm:"index" json:"merchant_id"`
-	Version    int  `gorm:"default:0" json:"-"`
+	ID         uint  `gorm:"primaryKey" json:"id"`
+	MerchantID uint  `gorm:"index" json:"merchant_id"`
+	PrePay     int64 `gorm:"default:0" json:"pre_pay"`
+	Version    int   `gorm:"default:0" json:"-"`
 }
 
 func (MerchantPre) TableName() string {
@@ -124,9 +125,10 @@ func (MerchantPre) TableName() string {
 
 // WriteoffPre 核销预付
 type WriteoffPre struct {
-	ID         uint `gorm:"primaryKey" json:"id"`
-	WriteoffID uint `gorm:"index" json:"writeoff_id"`
-	Version    int  `gorm:"default:0" json:"-"`
+	ID         uint  `gorm:"primaryKey" json:"id"`
+	WriteoffID uint  `gorm:"index" json:"writeoff_id"`
+	PrePay     int64 `gorm:"default:0" json:"pre_pay"`
+	Version    int   `gorm:"default:0" json:"-"`
 }
 
 func (WriteoffPre) TableName() string {

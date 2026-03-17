@@ -540,7 +540,7 @@ func main() {
 		}
 
 		// ===== 域名鉴权（nginx subrequest） =====
-		auth.GET("/auth_responder/check/", businessHandler.AuthResponderCheckAuth)
+		auth.GET("/auth_responder/check/:domain/", businessHandler.AuthResponderCheckAuth)
 	}
 
 	// 启动服务
