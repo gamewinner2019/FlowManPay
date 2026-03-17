@@ -213,7 +213,11 @@ func (h *WriteOffHandler) ChangeMoney(c *gin.Context) {
 		return
 	}
 
-	currentUser, _ := middleware.GetCurrentUser(c)
+	currentUser, exists := middleware.GetCurrentUser(c)
+	if !exists || currentUser == nil {
+		response.ErrorResponse(c, "用户未登录")
+		return
+	}
 
 	// 验证操作密码或Google 2FA
 	if req.OpPwd == "" && req.GoogleCode == "" {
@@ -298,7 +302,11 @@ func (h *WriteOffHandler) Transfer(c *gin.Context) {
 		return
 	}
 
-	currentUser, _ := middleware.GetCurrentUser(c)
+	currentUser, exists := middleware.GetCurrentUser(c)
+	if !exists || currentUser == nil {
+		response.ErrorResponse(c, "用户未登录")
+		return
+	}
 
 	err = h.DB.Transaction(func(tx *gorm.DB) error {
 		// 扣减源核销余额

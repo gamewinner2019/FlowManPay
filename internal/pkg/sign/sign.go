@@ -13,12 +13,12 @@ var DefaultUseList = []string{"mchId", "channelId", "mchOrderNo", "amount", "not
 // CombineValues sorts params by key and combines them into a string with the key appended.
 // Mirrors Python's combine_values function.
 func CombineValues(params map[string]string, key string) string {
-	// Remove sign field if present
-	delete(params, "sign")
-
-	// Sort keys
+	// Sort keys, excluding "sign"
 	keys := make([]string, 0, len(params))
 	for k := range params {
+		if k == "sign" {
+			continue
+		}
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)

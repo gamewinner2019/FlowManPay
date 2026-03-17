@@ -172,11 +172,12 @@ func (OrderLog) TableName() string {
 type QueryLog struct {
 	ID             uint           `gorm:"primaryKey" json:"id"`
 	OrderNo        string         `gorm:"size:32;index" json:"order_no"`              // 系统订单号
+	OutOrderNo     string         `gorm:"size:32" json:"out_order_no"`                // 商户订单号
 	URL            string         `gorm:"type:text" json:"url"`                       // 请求地址
-	RequestBody    string         `gorm:"type:text" json:"request_body"`              // 请求参数
-	RequestMethod  string         `gorm:"size:8" json:"request_method"`               // 请求方式
-	ResponseCode   int            `gorm:"default:-1" json:"response_code"`            // 响应状态码
-	JSONResult     string         `gorm:"type:text" json:"json_result"`               // 返回信息
+	ReqBody        string         `gorm:"type:text" json:"req_body"`                  // 请求参数
+	Method         string         `gorm:"size:8" json:"method"`                       // 请求方式
+	StatusCode     int            `gorm:"default:-1" json:"status_code"`              // 响应状态码
+	ResBody        string         `gorm:"type:text" json:"res_body"`                  // 返回信息
 	Remarks        string         `gorm:"type:text" json:"remarks"`                   // 备注
 	Description    string         `gorm:"size:255;default:''" json:"description"`
 	Creator        *uint          `gorm:"index" json:"creator"`
